@@ -1,0 +1,23 @@
+{
+  "name": "crono",
+  "version": "1.0.0",
+  "main": "index.js",
+  "packageManager": "pnpm@8.15.6",
+  "scripts": {
+    "build": "turbo build",
+    "clean": "turbo clean",
+    "dev": "turbo dev",
+    "doc": "node scripts/doc.js && typedoc",
+    "format": "prettier --write \"**/*.{ts,tsx,md,css,scss}\"",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "turbo": "^2.0.12"
+  }
+}

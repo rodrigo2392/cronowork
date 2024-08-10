@@ -1,0 +1,36 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "type": "module",
+  "packageManager": "pnpm@8.15.6",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite dev --port 3000",
+    "build": "vite build",
+    "start": "vite preview",
+    "type-check": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react-swc": "^3.7.0",
+    "types": "workspace:^",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "@eslint/js": "^9.8.0",
+    "eslint": "^9.8.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "globals": "^15.9.0",
+    "typescript-eslint": "^8.0.0"
+  }
+}
