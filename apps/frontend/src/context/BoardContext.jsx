@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useTranslation } from './LanguageContext';
+import { API_URL } from '../config';
 
 const BoardContext = createContext(undefined);
 
@@ -36,7 +37,7 @@ export const BoardProvider = ({ children }) => {
     setFetchError(false);
 
     // Fetch all users for assigning tasks
-    fetch('http://localhost:3500/users', {
+    fetch(`${API_URL}/users`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -44,7 +45,7 @@ export const BoardProvider = ({ children }) => {
         if (Array.isArray(data)) setAllUsers(data);
       })
       .catch(err => console.error("Could not fetch users:", err));
-    fetch('http://localhost:3500/projects', {
+    fetch(`${API_URL}/projects`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => {
@@ -250,7 +251,7 @@ export const BoardProvider = ({ children }) => {
     if (!token) return;
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      fetch(`http://localhost:3500/projects/${updatedProject.id}`, {
+      fetch(`${API_URL}/projects/${updatedProject.id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -304,7 +305,7 @@ export const BoardProvider = ({ children }) => {
     
     // Sync creation to backend
     if (token) {
-      fetch('http://localhost:3500/projects', {
+      fetch(`${API_URL}/projects`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -336,7 +337,7 @@ export const BoardProvider = ({ children }) => {
     
     // First save to backend
     if (token) {
-      const response = await fetch('http://localhost:3500/projects', {
+      const response = await fetch(`${API_URL}/projects`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -381,7 +382,7 @@ export const BoardProvider = ({ children }) => {
     
     // Sync deletion to backend
     if (token) {
-      fetch(`http://localhost:3500/projects/${projectId}`, {
+      fetch(`${API_URL}/projects/${projectId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       }).catch(err => console.error('Failed to delete project on backend:', err));

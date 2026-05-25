@@ -4,6 +4,7 @@ import { useBoard } from "../context/BoardContext";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "../context/LanguageContext";
 import * as Icons from "lucide-react";
+import { API_URL } from "../config";
 
 export default function AiTaskModal() {
   const { t } = useTranslation();
@@ -28,7 +29,7 @@ export default function AiTaskModal() {
     setIsGenerating(true);
     
     try {
-      const response = await fetch('http://localhost:3500/ai/generate', {
+      const response = await fetch(`${API_URL}/ai/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

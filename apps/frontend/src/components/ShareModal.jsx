@@ -4,6 +4,7 @@ import { useBoard } from '../context/BoardContext';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import * as Icons from 'lucide-react';
+import { APP_URL } from '../config';
 
 export default function ShareModal() {
   const { isShareModalOpen, setIsShareModalOpen, activeProject, inviteMember } = useBoard();
@@ -39,7 +40,8 @@ export default function ShareModal() {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+    const shareLink = `${APP_URL}/?project=${activeProject.id}`;
+    navigator.clipboard.writeText(shareLink);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };
