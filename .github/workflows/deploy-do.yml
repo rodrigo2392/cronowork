@@ -3,7 +3,7 @@ name: Deploy to DigitalOcean (PM2)
 on:
   push:
     branches:
-      - production
+      - master
 
 jobs:
   build-and-deploy:
