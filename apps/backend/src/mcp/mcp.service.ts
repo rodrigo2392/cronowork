@@ -133,7 +133,8 @@ export class McpService {
 
   async handleSse(req: Request, res: Response) {
     this.logger.log("New MCP SSE connection establishing...");
-    const transport = new SSEServerTransport("/mcp/messages", res);
+    const endpoint = process.env.MCP_MESSAGES_ENDPOINT || "/mcp/messages";
+    const transport = new SSEServerTransport(endpoint, res);
 
     const server = new Server(
       { name: "vibe-kanban-mcp", version: "1.0.0" },
