@@ -11,8 +11,8 @@ import { JwtStrategy } from './jwt.strategy';
     UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: 'super-secret-vibe-key', // Use ENV vars in production!
-      signOptions: { expiresIn: '7d' }, // Token valid for 7 days
+      secret: process.env.JWT_SECRET || 'super-secret-vibe-key', // Use ENV vars in production!
+      signOptions: { expiresIn: '30d' }, // Token valid for 30 days
     }),
   ],
   providers: [AuthService, JwtStrategy],

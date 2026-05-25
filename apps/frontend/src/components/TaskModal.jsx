@@ -4,9 +4,11 @@ import { useBoard } from "../context/BoardContext";
 import { useTranslation } from "../context/LanguageContext";
 import { useConfirm } from "../context/ConfirmContext";
 import * as Icons from "lucide-react";
+import { API_URL } from "../config";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useAuth } from "../context/AuthContext";
+import DOMPurify from 'dompurify';
 
 export default function TaskModal() {
   const { t, locale } = useTranslation();
@@ -246,7 +248,7 @@ export default function TaskModal() {
   const notifyAssignee = async (targetEmail, taskTitle) => {
     if (!token || !targetEmail || targetEmail === user?.email) return;
     try {
-      await fetch("http://localhost:3500/notifications", {
+      await fetch(`${API_URL}/notifications`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -606,7 +608,7 @@ export default function TaskModal() {
               padding: "8px 0 12px 0", // Added padding top and bottom
               lineHeight: "1.5"
             }}
-            dangerouslySetInnerHTML={{ __html: formatCommentContent(comment.content) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatCommentContent(comment.content)) }}
           />
 
           <div style={{ display: "flex", gap: "12px", alignItems: "center", marginTop: "4px" }}>
@@ -1011,7 +1013,7 @@ export default function TaskModal() {
                   }}
                   onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)"}
                   onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.02)"}
-                  dangerouslySetInnerHTML={{ __html: description || t("modal.task.desc_ph") }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(description) || t("modal.task.desc_ph") }}
                 />
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>

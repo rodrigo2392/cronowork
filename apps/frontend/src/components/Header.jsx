@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "../context/LanguageContext";
 import { useConfirm } from "../context/ConfirmContext";
 import ProfileModal from "./ProfileModal";
+import { API_URL } from "../config";
 
 export default function Header() {
   const {
@@ -59,7 +60,7 @@ export default function Header() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch("http://localhost:3500/notifications", {
+      const res = await fetch(`${API_URL}/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -74,7 +75,7 @@ export default function Header() {
 
   const markAsRead = async (id) => {
     try {
-      await fetch(`http://localhost:3500/notifications/${id}/read`, {
+      await fetch(`${API_URL}/notifications/${id}/read`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -86,7 +87,7 @@ export default function Header() {
 
   const markAllAsRead = async () => {
     try {
-      await fetch(`http://localhost:3500/notifications/read-all`, {
+      await fetch(`${API_URL}/notifications/read-all`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
       });

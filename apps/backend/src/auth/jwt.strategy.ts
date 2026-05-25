@@ -11,7 +11,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         ExtractJwt.fromUrlQueryParameter('token'),
       ]),
       ignoreExpiration: false,
-      secretOrKey: 'super-secret-vibe-key', // In a real app, use environment variables!
+      secretOrKey: process.env.JWT_SECRET || 'super-secret-vibe-key', // In a real app, use environment variables!
     });
   }
 

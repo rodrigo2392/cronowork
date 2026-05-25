@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import * as Icons from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function ProfileModal({ isOpen, onClose }) {
   const { user, token, checkAuth } = useAuth();
@@ -25,7 +26,7 @@ export default function ProfileModal({ isOpen, onClose }) {
 
     try {
       // Use the generic update profile endpoint
-      const response = await fetch('http://localhost:3500/users/profile', {
+      const response = await fetch(`${API_URL}/users/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

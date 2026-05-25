@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useBoard } from '../context/BoardContext';
 import { useTranslation } from '../context/LanguageContext';
 import * as Icons from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 export default function ActivityModal() {
   const { 
@@ -256,7 +257,7 @@ export default function ActivityModal() {
                             comentó en: <button onClick={() => handleOpenTask(comment.projectId, comment.taskId)} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', padding: 0, textDecoration: 'underline', fontSize: 'inherit' }}>{comment.taskId}</button>
                           </span>
                         </div>
-                        <div className="quill-content" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: comment.content }} />
+                        <div className="quill-content" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comment.content) }} />
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>
                           Hace {timeAgo(comment.createdAt)}
                         </div>
