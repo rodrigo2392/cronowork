@@ -21,6 +21,7 @@ import * as Icons from "lucide-react";
 
 function BoardWrapper() {
   const { projects, isProjectsLoading, fetchError, isProfileModalOpen, setIsProfileModalOpen } = useBoard();
+  const { logout } = useAuth();
 
   if (isProjectsLoading) {
     return (
@@ -86,24 +87,44 @@ function BoardWrapper() {
         <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "24px" }}>
           Por favor, espera un momento mientras el backend termina de inicializarse.
         </p>
-        <button
-          onClick={() => window.location.reload()}
-          style={{
-            padding: "10px 24px",
-            borderRadius: "var(--radius-md)",
-            border: "1px solid var(--border-color)",
-            backgroundColor: "var(--bg-tertiary)",
-            color: "var(--text-primary)",
-            cursor: "pointer",
-            fontWeight: 500,
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <Icons.RefreshCw size={16} />
-          Reintentar conexión
-        </button>
+        <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: "10px 24px",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--border-color)",
+              backgroundColor: "var(--bg-tertiary)",
+              color: "var(--text-primary)",
+              cursor: "pointer",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <Icons.RefreshCw size={16} />
+            Reintentar conexión
+          </button>
+          <button
+            onClick={logout}
+            style={{
+              padding: "10px 24px",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              backgroundColor: "rgba(239, 68, 68, 0.1)",
+              color: "var(--priority-high)",
+              cursor: "pointer",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <Icons.LogOut size={16} />
+            Cerrar sesión
+          </button>
+        </div>
       </div>
     );
   }

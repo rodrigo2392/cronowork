@@ -11,6 +11,22 @@ export const useAuth = () => {
   return context;
 };
 
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  try {
+    const response = await originalFetch(...args);
+    if (response.status === 401 || response.status === 403) {
+      const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+      if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
+        window.dispatchEvent(new Event('auth-unauthorized'));
+      }
+    }
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem('vibe_token') || null);
   const [user, setUser] = useState(() => {
@@ -69,23 +85,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const originalFetch = window.fetch;
-    window.fetch = async (...args) => {
-      try {
-        const response = await originalFetch(...args);
-        if (response.status === 401 || response.status === 403) {
-          const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
-          if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
-            logout();
-          }
-        }
-        return response;
-      } catch (error) {
-        throw error;
-      }
+    const handleUnauthorized = () => {
+      logout();
     };
+    window.addEventListener('auth-unauthorized', handleUnauthorized);
     return () => {
-      window.fetch = originalFetch;
+      window.removeEventListener('auth-unauthorized', handleUnauthorized);
     };
   }, []);
 
