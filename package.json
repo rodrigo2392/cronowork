@@ -10,6 +10,7 @@
   "scripts": {
     "dev:frontend": "npm run dev --workspace=frontend",
     "build:frontend": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
     "preview": "npm run preview --workspace=frontend",
     "dev:backend": "npm run start:dev --workspace=backend",
     "dev": "concurrently -c \"cyan,magenta\" -n \"FRONTEND,BACKEND\" \"npm run dev:frontend\" \"npm run dev:backend\"",
