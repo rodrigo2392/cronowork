@@ -138,6 +138,7 @@ export const BoardProvider = ({ children }) => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isProjectSettingsModalOpen, setIsProjectSettingsModalOpen] = useState(false);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [isMcpModalOpen, setIsMcpModalOpen] = useState(false);
   
   // Global Time Tracker State
   const [activeTracker, setActiveTracker] = useState(null); // { taskId, taskTitle, startTime, accumulatedTime }
@@ -965,6 +966,9 @@ export const BoardProvider = ({ children }) => {
         
         isArchiveModalOpen,
         setIsArchiveModalOpen,
+        
+        isMcpModalOpen,
+        setIsMcpModalOpen,
         
         selectProject: setActiveProjectId,
         addProject,

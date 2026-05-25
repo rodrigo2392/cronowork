@@ -28,7 +28,8 @@ export default function Header() {
     stopTracking,
     setViewingUserProfile,
     setIsProfileModalOpen,
-    setIsProjectSettingsModalOpen
+    setIsProjectSettingsModalOpen,
+    setIsMcpModalOpen
   } = useBoard();
 
   const [newColTitle, setNewColTitle] = useState("");
@@ -263,6 +264,29 @@ export default function Header() {
               title={t("header.edit_project")}
             >
               <Icons.Edit3 size={18} />
+            </button>
+            <button
+              onClick={() => setIsMcpModalOpen(true)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "var(--accent-color)",
+                cursor: "pointer",
+                padding: "8px",
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                transition: "all var(--transition-fast)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+              title="Conectar Agente MCP"
+            >
+              <Icons.Bot size={18} />
             </button>
             <button
               onClick={() => setIsProjectSettingsModalOpen(true)}

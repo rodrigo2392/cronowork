@@ -16,6 +16,7 @@ import ActivityModal from "./components/ActivityModal";
 import Onboarding from "./components/Onboarding";
 import ProjectSettingsModal from "./components/ProjectSettingsModal";
 import ArchiveModal from "./components/ArchiveModal";
+import McpTokenModal from "./components/McpTokenModal";
 import * as Icons from "lucide-react";
 
 function BoardWrapper() {
@@ -148,6 +149,7 @@ function BoardWrapper() {
       <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
       <ProjectSettingsModal />
       <ArchiveModal />
+      <McpTokenModal />
     </div>
   );
 }
