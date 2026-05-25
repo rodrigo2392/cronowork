@@ -176,6 +176,6 @@ export class McpService {
       return;
     }
 
-    await session.transport.handlePostMessage(req, res);
+    await session.transport.handlePostMessage(req, res, req.body);
   }
 }
