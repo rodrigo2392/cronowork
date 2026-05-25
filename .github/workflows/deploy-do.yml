@@ -73,8 +73,7 @@ jobs:
             # 4. Install strictly production dependencies
             npm ci --omit=dev || npm install --omit=dev
 
-            # 5. Inject Environment Variables securely
-            echo "OPENAI_API_KEY=${{ secrets.PROD_OPENAI_API_KEY }}" > apps/backend/.env
+            cp apps/backend/.env apps/backend/dist/.env
 
             # 6. Start or Restart PM2
             pm2 restart cronowork || pm2 start apps/backend/dist/main.js --name cronowork
