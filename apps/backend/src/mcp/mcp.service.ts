@@ -133,7 +133,9 @@ export class McpService {
 
   async handleSse(req: Request, res: Response) {
     this.logger.log("New MCP SSE connection establishing...");
-    const endpoint = process.env.MCP_MESSAGES_ENDPOINT || "/mcp/messages";
+    const baseUrl = process.env.MCP_MESSAGES_ENDPOINT || "/mcp/messages";
+    const token = req.query.token as string;
+    const endpoint = token ? `${baseUrl}?token=${token}` : baseUrl;
     const transport = new SSEServerTransport(endpoint, res);
 
     const server = new Server(
