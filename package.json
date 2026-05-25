@@ -1,0 +1,22 @@
+{
+  "name": "vibe-kanban",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "preview": "npm run preview --workspace=frontend",
+    "dev:backend": "npm run start:dev --workspace=backend",
+    "dev": "concurrently -c \"cyan,magenta\" -n \"FRONTEND,BACKEND\" \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "docker:build": "docker build -t cronowork .",
+    "docker:start": "npm run docker:build && docker run -it -p 3500:3500 -e MONGODB_URI=mongodb://host.docker.internal:27017/vibe --rm --name cronowork-local cronowork"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

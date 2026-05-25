@@ -1,0 +1,302 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useBoard } from '../context/BoardContext';
+import { useAuth } from '../context/AuthContext';
+import { useTranslation } from '../context/LanguageContext';
+import * as Icons from 'lucide-react';
+
+export default function ShareModal() {
+  const { isShareModalOpen, setIsShareModalOpen, activeProject, inviteMember } = useBoard();
+  const { user } = useAuth();
+  const { t } = useTranslation();
+
+  const [emailInput, setEmailInput] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  if (!isShareModalOpen || !activeProject) return null;
+
+  const handleInvite = async (e) => {
+    e.preventDefault();
+    if (!emailInput.trim()) return;
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      await inviteMember(activeProject.id, emailInput.trim());
+      setEmailInput('');
+    } catch (err) {
+      if (err.message === "user_not_found") {
+        setErrorMsg(t("modal.share.error_user_not_found") || "User does not exist");
+      } else if (err.message === "already_member") {
+        setErrorMsg(t("modal.share.error_already_member") || "User is already a member");
+      } else {
+        setErrorMsg(t("modal.share.error_generic") || "An error occurred");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const members = activeProject.members || [];
+
+  return (
+    <AnimatePresence>
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setIsShareModalOpen(false)}
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(4px)',
+          }}
+        />
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          style={{
+            position: 'relative',
+            width: '90%',
+            maxWidth: '460px',
+            borderRadius: 'var(--radius-lg)',
+            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: 101,
+            padding: '28px',
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px',
+            }}
+          >
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+              {t('modal.share.title') || "Share Project"}
+            </h2>
+            <button
+              onClick={() => setIsShareModalOpen(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+            >
+              <Icons.X size={18} />
+            </button>
+          </div>
+
+          <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Invite Input */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                {t('modal.share.email_label') || "Email address"}
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="email"
+                  placeholder={t('modal.share.email_ph') || "Enter email to invite..."}
+                  value={emailInput}
+                  onChange={(e) => {
+                    setEmailInput(e.target.value);
+                    if (errorMsg) setErrorMsg(null);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.9rem',
+                    outline: 'none',
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={!emailInput.trim() || isLoading}
+                  style={{
+                    padding: '0 16px',
+                    borderRadius: 'var(--radius-md)',
+                    border: 'none',
+                    backgroundColor: emailInput.trim() && !isLoading ? 'var(--accent-color)' : 'var(--bg-tertiary)',
+                    color: emailInput.trim() && !isLoading ? '#ffffff' : 'var(--text-muted)',
+                    fontSize: '0.85rem',
+                    fontWeight: 500,
+                    cursor: emailInput.trim() && !isLoading ? 'pointer' : 'not-allowed',
+                    transition: 'all var(--transition-fast)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (emailInput.trim() && !isLoading) e.currentTarget.style.backgroundColor = 'var(--accent-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (emailInput.trim() && !isLoading) e.currentTarget.style.backgroundColor = 'var(--accent-color)';
+                  }}
+                >
+                  {isLoading ? <Icons.Loader2 size={16} className="spin" style={{ animation: "spin 1s linear infinite" }} /> : t('modal.share.invite_btn') || "Invite"}
+                </button>
+              </div>
+              {errorMsg && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--priority-high)', marginTop: '2px' }}>
+                  {errorMsg}
+                </span>
+              )}
+            </div>
+
+            {/* Members List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                {t('modal.share.members') || "Project Members"}
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto' }}>
+                {/* Owner */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 600 }}>
+                      {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div>
+                      <p style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>{user?.name || t('header.user')}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{user?.email || 'user@example.com'}</p>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: '99px' }}>
+                    {t('modal.share.owner') || "Owner (You)"}
+                  </span>
+                </div>
+
+                {/* Invited Members */}
+                {members.map((email, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: 'transparent', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 600 }}>
+                        {email.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>{email.split('@')[0]}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{email}</p>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {t('modal.share.invited') || "Invited"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginTop: '12px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.03)',
+                paddingTop: '20px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '10px 16px',
+                  backgroundColor: isCopied ? "var(--completed-color)" : "rgba(99, 102, 241, 0.1)",
+                  border: isCopied ? "1px solid var(--completed-color)" : "1px solid rgba(99, 102, 241, 0.2)",
+                  borderRadius: "var(--radius-md)",
+                  color: isCopied ? "#ffffff" : "var(--accent-color)",
+                  fontSize: "0.85rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  transition: "all var(--transition-fast)",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isCopied) {
+                    e.currentTarget.style.backgroundColor = "var(--accent-color)";
+                    e.currentTarget.style.color = "#ffffff";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isCopied) {
+                    e.currentTarget.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
+                    e.currentTarget.style.color = "var(--accent-color)";
+                  }
+                }}
+              >
+                {isCopied ? <Icons.Check size={14} /> : <Icons.Link size={14} />}
+                <span>{isCopied ? t("modal.share.copied") || "¡Copiado!" : t("modal.share.copy_link") || "Copiar Enlace"}</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setIsShareModalOpen(false)}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all var(--transition-fast)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-hover)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border-color)';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
+              >
+                {t('modal.project.cancel')}
+              </button>
+            </div>
+          </form>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}
