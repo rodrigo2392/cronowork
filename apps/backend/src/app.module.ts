@@ -22,7 +22,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI') || 'mongodb://localhost:27017/vibe',
+        uri: configService.get<string>('MONGO_URI') || configService.get<string>('MONGODB_URI') || 'mongodb://localhost:27017/vibe',
       }),
       inject: [ConfigService],
     }),
