@@ -68,6 +68,27 @@ export const AuthProvider = ({ children }) => {
     window.history.replaceState({}, '', window.location.pathname);
   };
 
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      try {
+        const response = await originalFetch(...args);
+        if (response.status === 401 || response.status === 403) {
+          const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+          if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
+            logout();
+          }
+        }
+        return response;
+      } catch (error) {
+        throw error;
+      }
+    };
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
   return (
     <AuthContext.Provider value={{ token, user, setUser, login, register, logout }}>
       {children}
