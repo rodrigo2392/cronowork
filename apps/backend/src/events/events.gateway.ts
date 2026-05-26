@@ -8,7 +8,6 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
-  path: '/api/socket.io/',
   cors: {
     origin: '*', // En producción limitar al dominio del frontend
   },
