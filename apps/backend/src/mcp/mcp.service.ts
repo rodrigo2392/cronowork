@@ -18,7 +18,7 @@ export class McpService {
 
   constructor(private projectsService: ProjectsService) {}
 
-  private registerTools(server: Server) {
+  private registerTools(server: Server, user: any) {
     server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
@@ -50,13 +50,53 @@ export class McpService {
               required: ["projectId", "columnId", "title"],
             },
           },
+          {
+            name: "update_task",
+            description: "Update an existing task's title, description, or move it to a different column",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project" },
+                taskId: { type: "string", description: "The ID of the task to update" },
+                title: { type: "string", description: "New task title (optional)" },
+                description: { type: "string", description: "New task description (optional)" },
+                newColumnId: { type: "string", description: "The ID of the new column to move the task to (optional)" }
+              },
+              required: ["projectId", "taskId"],
+            },
+          },
+          {
+            name: "create_project",
+            description: "Create a new Kanban project",
+            inputSchema: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "The name of the new project" },
+                description: { type: "string", description: "The project description (optional)" }
+              },
+              required: ["name"],
+            },
+          },
+          {
+            name: "update_project",
+            description: "Update an existing project's name or description",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project to update" },
+                name: { type: "string", description: "New project name (optional)" },
+                description: { type: "string", description: "New project description (optional)" }
+              },
+              required: ["projectId"],
+            },
+          }
         ],
       };
     });
 
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const AI_AGENT_USER_ID = "ai-mcp-agent-system-user";
-      const AI_AGENT_EMAIL = "ai-mcp-agent@system.local";
+      const AI_AGENT_USER_ID = user.userId || "ai-mcp-agent-system-user";
+      const AI_AGENT_EMAIL = user.email || "ai-mcp-agent@system.local";
 
       if (request.params.name === "list_projects") {
         const projects = await this.projectsService.findAll(AI_AGENT_USER_ID, AI_AGENT_EMAIL);
@@ -120,9 +160,110 @@ export class McpService {
         } catch (error: any) {
           return {
             isError: true,
-            content: [
-              { type: "text", text: `Error adding task: ${error?.message}` },
-            ],
+            content: [{ type: "text", text: `Error adding task: ${error?.message}` }],
+          };
+        }
+      }
+
+      if (request.params.name === "update_task") {
+        const { projectId, taskId, title, description, newColumnId } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          
+          if (!project.tasks || !project.tasks[taskId]) {
+            throw new Error(`Task with ID ${taskId} not found in project`);
+          }
+
+          if (title !== undefined) project.tasks[taskId].title = title;
+          if (description !== undefined) project.tasks[taskId].description = description;
+
+          if (newColumnId) {
+            // Find current column
+            let currentColumnId = null;
+            for (const [colId, col] of Object.entries(project.columns || {})) {
+              if ((col as any).taskIds.includes(taskId)) {
+                currentColumnId = colId;
+                break;
+              }
+            }
+
+            if (currentColumnId && currentColumnId !== newColumnId) {
+              // Remove from old column
+              project.columns[currentColumnId].taskIds = project.columns[currentColumnId].taskIds.filter(
+                (id: string) => id !== taskId
+              );
+              
+              // Add to new column
+              if (!project.columns[newColumnId]) {
+                 project.columns[newColumnId] = { id: newColumnId, title: newColumnId, taskIds: [] };
+              }
+              project.columns[newColumnId].taskIds.push(taskId);
+            }
+          }
+
+          // Force mongoose to recognize changes to mixed types
+          project.markModified('tasks');
+          project.markModified('columns');
+
+          await this.projectsService.update(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL, project);
+          return {
+            content: [{ type: "text", text: `Task ${taskId} successfully updated.` }],
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{ type: "text", text: `Error updating task: ${error?.message}` }],
+          };
+        }
+      }
+
+      if (request.params.name === "create_project") {
+        const { name, description } = request.params.arguments as any;
+        try {
+          const projectId = `project-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+          const projectData = {
+            id: projectId,
+            name,
+            description: description || "",
+            prefix: name.substring(0, 3).toUpperCase(),
+            icon: "Briefcase",
+            tasks: {},
+            columnOrder: ["column-todo", "column-in-progress", "column-done"],
+            columns: {
+              "column-todo": { id: "column-todo", title: "To Do", taskIds: [] },
+              "column-in-progress": { id: "column-in-progress", title: "In Progress", taskIds: [] },
+              "column-done": { id: "column-done", title: "Done", taskIds: [] }
+            }
+          };
+
+          const newProject = await this.projectsService.create(AI_AGENT_USER_ID, projectData);
+          return {
+            content: [{ type: "text", text: `Project successfully created. Project ID: ${newProject.id}` }],
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{ type: "text", text: `Error creating project: ${error?.message}` }],
+          };
+        }
+      }
+
+      if (request.params.name === "update_project") {
+        const { projectId, name, description } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          
+          if (name !== undefined) project.name = name;
+          if (description !== undefined) project.description = description;
+
+          await this.projectsService.update(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL, project);
+          return {
+            content: [{ type: "text", text: `Project ${projectId} successfully updated.` }],
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{ type: "text", text: `Error updating project: ${error?.message}` }],
           };
         }
       }
@@ -143,7 +284,8 @@ export class McpService {
       { capabilities: { tools: {} } },
     );
 
-    this.registerTools(server);
+    const user = (req as any).user || {};
+    this.registerTools(server, user);
     await server.connect(transport);
 
     const sessionId = transport.sessionId;
