@@ -16,6 +16,16 @@ export class UsersService {
     return this.userModel.findOne({ email }).exec();
   }
 
+  async findByEmailOrName(identifier: string): Promise<User | null> {
+    // Busca primero por email, si no, busca por nombre exacto (case-insensitive)
+    return this.userModel.findOne({ 
+      $or: [
+        { email: identifier },
+        { name: { $regex: new RegExp(`^${identifier}$`, 'i') } }
+      ]
+    }).exec();
+  }
+
   async findById(id: string): Promise<User | null> {
     return this.userModel.findById(id).exec();
   }

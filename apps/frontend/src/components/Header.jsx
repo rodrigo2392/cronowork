@@ -11,6 +11,10 @@ import { API_URL } from "../config";
 export default function Header() {
   const {
     activeProject,
+    projects,
+    selectProject,
+    setEditingTask,
+    setIsTaskModalOpen,
     searchQuery,
     setSearchQuery,
     filterPriority,
@@ -174,6 +178,28 @@ export default function Header() {
     if (isConfirmed) {
       deleteProject(activeProject.id);
     }
+  };
+
+  const handleNotificationClick = (notif) => {
+    if (!notif.read) markAsRead(notif._id);
+    
+    if (notif.projectId) {
+      const targetProject = projects.find(p => p.id === notif.projectId);
+      if (targetProject) {
+        if (activeProject?.id !== notif.projectId) {
+          selectProject(notif.projectId);
+        }
+        
+        if (notif.taskId && targetProject.tasks && targetProject.tasks[notif.taskId]) {
+          // Give context time to switch projects if needed
+          setTimeout(() => {
+            setEditingTask(targetProject.tasks[notif.taskId]);
+            setIsTaskModalOpen(true);
+          }, 50);
+        }
+      }
+    }
+    setShowNotifPopover(false);
   };
 
   const handleLogout = async () => {
@@ -540,7 +566,7 @@ export default function Header() {
                       notifications.map((notif) => (
                         <div
                           key={notif._id}
-                          onClick={() => { if (!notif.read) markAsRead(notif._id); }}
+                          onClick={() => handleNotificationClick(notif)}
                           style={{
                             padding: "10px",
                             borderRadius: "var(--radius-md)",

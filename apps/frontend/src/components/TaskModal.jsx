@@ -1556,6 +1556,72 @@ export default function TaskModal() {
               </div>
             )}
 
+            {/* AI Metrics Section (Read-only) */}
+            {((liveTask || editingTask)?.tokensConsumed !== undefined || (liveTask || editingTask)?.timeSpent || (liveTask || editingTask)?.cost !== undefined || (liveTask || editingTask)?.model) && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                  borderTop: "1px solid rgba(255, 255, 255, 0.03)",
+                  paddingTop: "16px",
+                }}
+              >
+                <label
+                  style={{
+                    fontSize: "0.8rem",
+                    color: "var(--text-secondary)",
+                    fontWeight: 500,
+                  }}
+                >
+                  <Icons.Bot size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                  {t("task.ai_metrics")}
+                </label>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  {/* Tokens */}
+                  {((liveTask || editingTask)?.tokensConsumed !== undefined) && (
+                    <div style={{ background: "var(--bg-tertiary)", padding: "8px 12px", borderRadius: "var(--radius-sm)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{t("task.tokens")}</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: 600, fontFamily: "monospace" }}>
+                        {((liveTask || editingTask).tokensConsumed).toLocaleString()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Time Spent */}
+                  {((liveTask || editingTask)?.timeSpent) && (
+                    <div style={{ background: "var(--bg-tertiary)", padding: "8px 12px", borderRadius: "var(--radius-sm)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{t("task.time_spent")}</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: 600, fontFamily: "monospace" }}>
+                        {(liveTask || editingTask).timeSpent}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cost */}
+                  {((liveTask || editingTask)?.cost !== undefined) && (
+                    <div style={{ background: "var(--bg-tertiary)", padding: "8px 12px", borderRadius: "var(--radius-sm)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{t("task.cost")}</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--priority-high)", fontWeight: 600, fontFamily: "monospace" }}>
+                        ${((liveTask || editingTask).cost).toFixed(4)}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Model */}
+                  {((liveTask || editingTask)?.model) && (
+                    <div style={{ background: "var(--bg-tertiary)", padding: "8px 12px", borderRadius: "var(--radius-sm)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{t("task.model")}</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--text-primary)", fontWeight: 500 }}>
+                        {(liveTask || editingTask).model}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Subtasks Checklist */}
             <div
               style={{

@@ -75,7 +75,11 @@ export class McpService {
                     } 
                   },
                   description: "Array of subtask objects (optional)" 
-                }
+                },
+                tokensConsumed: { type: "number", description: "Number of tokens consumed by the AI agent (optional)" },
+                timeSpent: { type: "string", description: "Time spent by the AI agent, e.g. '45s', '2m' (optional)" },
+                cost: { type: "number", description: "Estimated cost in USD of the AI operation (optional)" },
+                model: { type: "string", description: "AI model used, e.g. 'claude-3-5-sonnet' (optional)" }
               },
               required: ["projectId", "columnId", "title"],
             },
@@ -105,7 +109,11 @@ export class McpService {
                   },
                   description: "New array of subtask objects (optional)" 
                 },
-                newColumnId: { type: "string", description: "The ID of the new column to move the task to (optional)" }
+                newColumnId: { type: "string", description: "The ID of the new column to move the task to (optional)" },
+                tokensConsumed: { type: "number", description: "Update number of tokens consumed by the AI agent (optional)" },
+                timeSpent: { type: "string", description: "Update time spent by the AI agent (optional)" },
+                cost: { type: "number", description: "Update estimated cost in USD (optional)" },
+                model: { type: "string", description: "Update AI model used (optional)" }
               },
               required: ["projectId", "taskId"],
             },
@@ -145,7 +153,7 @@ export class McpService {
                 taskId: { type: "string", description: "The ID of the task to comment on" },
                 content: { type: "string", description: "The content of the comment in Markdown format" },
                 agentName: { type: "string", description: "Optional name of the AI agent making the comment (defaults to 'Agente IA')" },
-                mentions: { type: "array", items: { type: "string" }, description: "Optional array of user emails to tag and notify" }
+                mentions: { type: "array", items: { type: "string" }, description: "Optional array of user emails or exact names to tag and notify" }
               },
               required: ["projectId", "taskId", "content"],
             },
@@ -166,7 +174,7 @@ export class McpService {
       }
 
       if (request.params.name === "add_task") {
-        const { projectId, columnId, title, description, priority, tags, dueDate, subtasks } = request.params
+        const { projectId, columnId, title, description, priority, tags, dueDate, subtasks, tokensConsumed, timeSpent, cost, model } = request.params
           .arguments as any;
 
         try {
@@ -178,7 +186,7 @@ export class McpService {
 
           const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
           const parsedDescription = description ? await marked.parse(formatMarkdownTitles(description), { breaks: true, gfm: true }) : "";
-          const newTask = {
+          const newTask: any = {
             id: taskId,
             title,
             description: parsedDescription,
@@ -188,6 +196,11 @@ export class McpService {
             dueDate: dueDate || "",
             createdAt: new Date().toISOString(),
           };
+
+          if (tokensConsumed !== undefined) newTask.tokensConsumed = tokensConsumed;
+          if (timeSpent !== undefined) newTask.timeSpent = timeSpent;
+          if (cost !== undefined) newTask.cost = cost;
+          if (model !== undefined) newTask.model = model;
 
           // Safely inject the task into the nested structure
           project.tasks = project.tasks || {};
@@ -227,7 +240,7 @@ export class McpService {
       }
 
       if (request.params.name === "update_task") {
-        const { projectId, taskId, title, description, priority, tags, dueDate, subtasks, newColumnId } = request.params.arguments as any;
+        const { projectId, taskId, title, description, priority, tags, dueDate, subtasks, newColumnId, tokensConsumed, timeSpent, cost, model } = request.params.arguments as any;
         try {
           const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
           
@@ -243,6 +256,11 @@ export class McpService {
           if (tags !== undefined) project.tasks[taskId].tags = tags;
           if (dueDate !== undefined) project.tasks[taskId].dueDate = dueDate;
           if (subtasks !== undefined) project.tasks[taskId].subtasks = subtasks;
+          
+          if (tokensConsumed !== undefined) project.tasks[taskId].tokensConsumed = tokensConsumed;
+          if (timeSpent !== undefined) project.tasks[taskId].timeSpent = timeSpent;
+          if (cost !== undefined) project.tasks[taskId].cost = cost;
+          if (model !== undefined) project.tasks[taskId].model = model;
 
           if (newColumnId) {
             // Find current column
@@ -310,8 +328,8 @@ export class McpService {
 
           // Handle mentions
           if (mentions && Array.isArray(mentions) && mentions.length > 0) {
-            for (const email of mentions) {
-              const targetUser = await this.usersService.findByEmail(email);
+            for (const identifier of mentions) {
+              const targetUser = await this.usersService.findByEmailOrName(identifier);
               if (targetUser) {
                 const targetUserId = targetUser._id.toString();
                 // Ensure the user is actually part of the project
