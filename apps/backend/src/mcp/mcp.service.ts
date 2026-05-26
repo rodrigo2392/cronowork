@@ -7,6 +7,8 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { ProjectsService } from "../projects/projects.service";
+import { NotificationsService } from "../notifications/notifications.service";
+import { UsersService } from "../users/users.service";
 import { marked } from "marked";
 
 function formatMarkdownTitles(text: string): string {
@@ -25,7 +27,11 @@ export class McpService {
     { transport: SSEServerTransport; server: Server }
   >();
 
-  constructor(private projectsService: ProjectsService) {}
+  constructor(
+    private projectsService: ProjectsService,
+    private notificationsService: NotificationsService,
+    private usersService: UsersService
+  ) {}
 
   private registerTools(server: Server, user: any) {
     server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -127,6 +133,21 @@ export class McpService {
                 description: { type: "string", description: "New project description (optional)" }
               },
               required: ["projectId"],
+            },
+          },
+          {
+            name: "add_task_comment",
+            description: "Add a comment to an existing task",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project" },
+                taskId: { type: "string", description: "The ID of the task to comment on" },
+                content: { type: "string", description: "The content of the comment in Markdown format" },
+                agentName: { type: "string", description: "Optional name of the AI agent making the comment (defaults to 'Agente IA')" },
+                mentions: { type: "array", items: { type: "string" }, description: "Optional array of user emails to tag and notify" }
+              },
+              required: ["projectId", "taskId", "content"],
             },
           }
         ],
@@ -252,14 +273,65 @@ export class McpService {
           project.markModified('columns');
 
           await this.projectsService.update(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL, project);
-          return {
-            content: [{ type: "text", text: `Task ${taskId} successfully updated.` }],
-          };
+          return { content: [{ type: "text", text: `Task ${taskId} successfully updated.` }] };
         } catch (error: any) {
-          return {
-            isError: true,
-            content: [{ type: "text", text: `Error updating task: ${error?.message}` }],
+          return { isError: true, content: [{ type: "text", text: `Error updating task: ${error?.message}` }] };
+        }
+      }
+
+      if (request.params.name === "add_task_comment") {
+        const { projectId, taskId, content, agentName, mentions } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          
+          if (!project.tasks || !project.tasks[taskId]) {
+            throw new Error(`Task with ID ${taskId} not found in project`);
+          }
+
+          const parsedContent = content ? await marked.parse(content, { breaks: true, gfm: true }) : "";
+          const commentId = `comment-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+          
+          const newComment = {
+            id: commentId,
+            content: parsedContent,
+            userId: AI_AGENT_USER_ID,
+            userName: agentName || "Agente IA",
+            createdAt: new Date().toISOString(),
+            parentId: null
           };
+
+          if (!project.tasks[taskId].comments) {
+            project.tasks[taskId].comments = [];
+          }
+          project.tasks[taskId].comments.push(newComment);
+
+          project.markModified('tasks');
+          await this.projectsService.update(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL, project);
+
+          // Handle mentions
+          if (mentions && Array.isArray(mentions) && mentions.length > 0) {
+            for (const email of mentions) {
+              const targetUser = await this.usersService.findByEmail(email);
+              if (targetUser) {
+                const targetUserId = targetUser._id.toString();
+                // Ensure the user is actually part of the project
+                if (project.userId === targetUserId || (project.sharedWith && project.sharedWith.includes(targetUserId))) {
+                  await this.notificationsService.create({
+                    userId: targetUserId,
+                    title: 'Mención en tarea',
+                    message: `El ${agentName || "Agente IA"} te ha mencionado en la tarea "${project.tasks[taskId].title || taskId}"`,
+                    type: 'SYSTEM',
+                    taskId: taskId,
+                    projectId: projectId
+                  });
+                }
+              }
+            }
+          }
+
+          return { content: [{ type: "text", text: `Comment successfully added to task ${taskId}. Comment ID: ${commentId}` }] };
+        } catch (error: any) {
+          return { isError: true, content: [{ type: "text", text: `Error adding comment: ${error?.message}` }] };
         }
       }
 

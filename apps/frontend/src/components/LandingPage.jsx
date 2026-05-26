@@ -1,20 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Github, Code2, Bot, Layers, Zap, Sun, Moon, Globe } from 'lucide-react';
+import { ArrowRight, Github, Code2, Bot, Layers, Zap, Sun, Moon, Globe, Menu, X } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
 import '../styles/LandingPage.css';
+
+const useTypewriter = (words, typingSpeed = 100, deletingSpeed = 50, pauseTime = 2000) => {
+  const [text, setText] = useState('');
+  const [wordIndex, setWordIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentWord = words[wordIndex];
+    let timeout;
+    
+    if (isDeleting) {
+      timeout = setTimeout(() => {
+        setText(currentWord.substring(0, text.length - 1));
+      }, deletingSpeed);
+    } else {
+      timeout = setTimeout(() => {
+        setText(currentWord.substring(0, text.length + 1));
+      }, typingSpeed);
+    }
+
+    if (!isDeleting && text === currentWord) {
+      timeout = setTimeout(() => setIsDeleting(true), pauseTime);
+    } else if (isDeleting && text === '') {
+      setIsDeleting(false);
+      setWordIndex((prev) => (prev + 1) % words.length);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [text, isDeleting, words, wordIndex, typingSpeed, deletingSpeed, pauseTime]);
+
+  return text;
+};
 
 export default function LandingPage({ onNavigateToAuth }) {
   const { t, locale, toggleLanguage } = useTranslation();
   const [theme, setTheme] = useState(localStorage.getItem('vibe_theme') || 'dark');
+  const [activeShowcase, setActiveShowcase] = useState(0);
+  const [activeFaq, setActiveFaq] = useState(null);
+  const [activeUseCase, setActiveUseCase] = useState(1);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const typedText = useTypewriter([
+    t("landing.title_span") || "Agentes de IA",
+    "Claude Code",
+    "Desarrolladores",
+    "Equipos Autónomos"
+  ]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('vibe_theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveShowcase((prev) => (prev + 1) % 3);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
   };
 
   // Animation variants
@@ -60,17 +118,13 @@ export default function LandingPage({ onNavigateToAuth }) {
 
   return (
     <div className="landing-container">
-      {/* Background Elements */}
-      <div className="landing-bg"></div>
-      <div className="glow-center"></div>
-
       {/* Navbar */}
       <nav className="landing-nav">
         <div className="landing-logo">
           <Layers className="landing-logo-icon" size={28} />
           Cronowork
         </div>
-        <div className="landing-nav-links">
+        <div className="landing-nav-links desktop-only">
           <button onClick={toggleLanguage} className="theme-toggle-btn" aria-label="Toggle Language" title="Language">
             <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{locale.toUpperCase()}</span>
           </button>
@@ -84,38 +138,72 @@ export default function LandingPage({ onNavigateToAuth }) {
             {t("landing.login") || "Iniciar Sesión"}
           </button>
         </div>
+
+        {/* Mobile Menu Button */}
+        <button 
+          className="mobile-menu-btn" 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Toggle Mobile Menu"
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="mobile-menu-dropdown">
+            <button onClick={() => { toggleLanguage(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+              <Globe size={18} /> {locale === 'es' ? 'English' : 'Español'}
+            </button>
+            <button onClick={() => { toggleTheme(); setIsMobileMenuOpen(false); }} className="mobile-menu-item">
+              {theme === 'dark' ? <><Sun size={18} /> Modo Claro</> : <><Moon size={18} /> Modo Oscuro</>}
+            </button>
+            <a href="https://github.com/rodrigo2392/cronowork" target="_blank" rel="noopener noreferrer" className="mobile-menu-item">
+              <Github size={18} /> GitHub
+            </a>
+            <div className="mobile-menu-divider"></div>
+            <button onClick={onNavigateToAuth} className="btn-primary w-full" style={{ padding: "10px", marginTop: "10px" }}>
+              {t("landing.login") || "Iniciar Sesión"}
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
-      <section className="hero-section">
-        <motion.div 
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-        >
-          <motion.div variants={itemVariants} className="open-source-badge">
-            <Github size={16} /> {t("landing.badge") || "Orgullosamente Open Source"}
-          </motion.div>
-          
-          <motion.h1 variants={itemVariants} className="hero-title">
+      <section className="hero-section" onMouseMove={handleMouseMove}>
+        <div className="hero-glow-static"></div>
+        <div className="hero-bg-static"></div>
+        <div className="hero-bg-interactive"></div>
+        
+        <div className="hero-content">
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+          >
+            <motion.div variants={itemVariants} className="open-source-badge">
+              <Github size={16} /> {t("landing.badge") || "Orgullosamente Open Source"}
+            </motion.div>
+            
+            <motion.h1 variants={itemVariants} className="hero-title">
             {t("landing.title_1") || "El Kanban diseñado para "} <br />
-            <span>{t("landing.title_span") || "Agentes de IA"}</span>
+            <span>{typedText}</span><span className="typing-cursor">|</span>
           </motion.h1>
-          
-          <motion.p variants={itemVariants} className="hero-subtitle">
-            {t("landing.subtitle") || "Un entorno de trabajo autónomo donde tú defines los objetivos y la IA interactúa directamente con tus proyectos mediante comandos estructurados."}
-          </motion.p>
-          
-          <motion.div variants={itemVariants} className="hero-actions">
-            <button onClick={onNavigateToAuth} className="btn-primary">
-              {t("landing.btn_start") || "Comenzar gratis"} <ArrowRight size={18} />
-            </button>
-            <a href="https://github.com/rodrigo2392/cronowork" target="_blank" rel="noopener noreferrer" className="btn-secondary">
-              <Github size={18} /> {t("landing.btn_repo") || "Ver repositorio"}
-            </a>
+            
+            <motion.p variants={itemVariants} className="hero-subtitle">
+              {t("landing.subtitle") || "Un entorno de trabajo autónomo donde tú defines los objetivos y la IA interactúa directamente con tus proyectos mediante comandos estructurados."}
+            </motion.p>
+            
+            <motion.div variants={itemVariants} className="hero-actions">
+              <button onClick={onNavigateToAuth} className="btn-primary">
+                {t("landing.btn_start") || "Comenzar gratis"} <ArrowRight size={18} />
+              </button>
+              <a href="https://github.com/rodrigo2392/cronowork" target="_blank" rel="noopener noreferrer" className="btn-secondary">
+                <Github size={18} /> {t("landing.btn_repo") || "Ver repositorio"}
+              </a>
+            </motion.div>
           </motion.div>
-        </motion.div>
+        </div>
       </section>
 
       {/* App Showcase 3D Overlap Section */}
@@ -127,14 +215,103 @@ export default function LandingPage({ onNavigateToAuth }) {
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div className="showcase-image-wrapper img-2">
-            <img src="/cap2.png" alt="Cronowork App Preview 2" />
+          {[
+            { src: "/cap1.png", alt: "Cronowork App Preview 1" },
+            { src: "/cap2.png", alt: "Cronowork App Preview 2" },
+            { src: "/cap3.png", alt: "Cronowork App Preview 3" },
+          ].map((img, index) => {
+            // Determine relative position
+            let positionClass = "img-1"; // default front
+            if (index === (activeShowcase + 1) % 3) positionClass = "img-3"; // back right
+            if (index === (activeShowcase + 2) % 3) positionClass = "img-2"; // back left
+            
+            return (
+              <div key={index} className={`showcase-image-wrapper ${positionClass}`}>
+                <img src={img.src} alt={img.alt} />
+              </div>
+            );
+          })}
+        </motion.div>
+      </section>
+
+      {/* How it Works Section */}
+      <section className="how-it-works-section">
+        <motion.div 
+          className="hiw-container"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={containerVariants}
+        >
+          <motion.h2 variants={itemVariants} className="section-title">
+            {t("landing.hiw_title")}
+          </motion.h2>
+          
+          <div className="hiw-steps">
+            {[1, 2, 3].map((step) => (
+              <motion.div key={step} variants={itemVariants} className="hiw-step">
+                <div className="hiw-number">{step}</div>
+                <h3 className="hiw-step-title">{t(`landing.hiw_step${step}_title`)}</h3>
+                <p className="hiw-step-desc">{t(`landing.hiw_step${step}_desc`)}</p>
+                {step !== 3 && <div className="hiw-connector"></div>}
+              </motion.div>
+            ))}
           </div>
-          <div className="showcase-image-wrapper img-3">
-            <img src="/cap3.png" alt="Cronowork App Preview 3" />
-          </div>
-          <div className="showcase-image-wrapper img-1">
-            <img src="/cap1.png" alt="Cronowork Main App Preview" />
+        </motion.div>
+      </section>
+
+      {/* Use Cases Section */}
+      <section className="use-cases-section">
+        <motion.div 
+          className="uc-container"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={containerVariants}
+        >
+          <motion.h2 variants={itemVariants} className="section-title">
+            {t("landing.uc_title")}
+          </motion.h2>
+
+          <div className="uc-content">
+            <div className="uc-tabs">
+              {[1, 2, 3].map((tab) => (
+                <button 
+                  key={tab}
+                  className={`uc-tab ${activeUseCase === tab ? 'active' : ''}`}
+                  onClick={() => setActiveUseCase(tab)}
+                >
+                  <span className="uc-tab-num">0{tab}</span>
+                  {t(`landing.uc_tab${tab}`)}
+                </button>
+              ))}
+            </div>
+
+            <div className="uc-display">
+              <motion.div 
+                key={activeUseCase}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4 }}
+                className="uc-card"
+              >
+                <h3>{t(`landing.uc_tab${activeUseCase}_title`)}</h3>
+                <p>{t(`landing.uc_tab${activeUseCase}_desc`)}</p>
+                <div className="uc-mockup">
+                  <div className="uc-mockup-header">
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                    <span className="dot"></span>
+                  </div>
+                  <div className="uc-mockup-body">
+                    {/* Abstract Representation of the Workflow */}
+                    <div className="uc-abstract-line" style={{ width: '60%' }}></div>
+                    <div className="uc-abstract-line" style={{ width: '80%' }}></div>
+                    <div className="uc-abstract-line accent" style={{ width: '40%' }}></div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </motion.div>
       </section>
@@ -158,7 +335,12 @@ export default function LandingPage({ onNavigateToAuth }) {
           variants={containerVariants}
         >
           {features.map((feature, index) => (
-            <motion.div key={index} variants={itemVariants} className={`bento-card ${feature.isLarge ? 'bento-large' : ''}`}>
+            <motion.div 
+              key={index} 
+              variants={itemVariants} 
+              className={`bento-card ${feature.isLarge ? 'bento-large' : ''}`}
+              onMouseMove={handleMouseMove}
+            >
               <div className="feature-icon-wrapper">
                 {feature.icon}
               </div>
@@ -166,6 +348,40 @@ export default function LandingPage({ onNavigateToAuth }) {
               <p>{feature.description}</p>
             </motion.div>
           ))}
+        </motion.div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="faq-section">
+        <motion.div 
+          className="faq-container"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={containerVariants}
+        >
+          <motion.h2 variants={itemVariants} className="section-title">
+            {t("landing.faq_title")}
+          </motion.h2>
+          
+          <div className="faq-list">
+            {[1, 2, 3].map((num) => {
+              const isOpen = activeFaq === num;
+              return (
+                <motion.div key={num} variants={itemVariants} className={`faq-item ${isOpen ? 'active' : ''}`}>
+                  <button className="faq-question" onClick={() => setActiveFaq(isOpen ? null : num)}>
+                    {t(`landing.faq_q${num}`)}
+                    <span className="faq-icon">{isOpen ? '−' : '+'}</span>
+                  </button>
+                  <div className="faq-answer-wrapper" style={{ height: isOpen ? 'auto' : 0, overflow: 'hidden' }}>
+                    <div className="faq-answer">
+                      {t(`landing.faq_a${num}`)}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
         </motion.div>
       </section>
 
