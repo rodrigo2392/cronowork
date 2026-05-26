@@ -9,6 +9,14 @@ import {
 import { ProjectsService } from "../projects/projects.service";
 import { marked } from "marked";
 
+function formatMarkdownTitles(text: string): string {
+  if (!text) return text;
+  // Force newlines before and after ALL CAPS titles or titles ending with a colon
+  let formatted = text.replace(/(?:^|\s+)\*\*([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑ\s]+)\*\*\s+/g, '\n\n**$1**\n');
+  formatted = formatted.replace(/(?:^|\s+)\*\*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+:)\*\*\s+/g, '\n\n**$1**\n');
+  return formatted.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 @Injectable()
 export class McpService {
   private readonly logger = new Logger(McpService.name);
@@ -45,7 +53,7 @@ export class McpService {
                 title: { type: "string", description: "Task title" },
                 description: {
                   type: "string",
-                  description: "Task description",
+                  description: "Task description in Markdown format. Use \\n for line breaks and ** for bold text.",
                 },
                 priority: { type: "string", description: "Task priority (low, medium, high, critical) (optional)" },
                 tags: { type: "array", items: { type: "string" }, description: "Array of tags (optional)" },
@@ -75,7 +83,7 @@ export class McpService {
                 projectId: { type: "string", description: "The ID of the project" },
                 taskId: { type: "string", description: "The ID of the task to update" },
                 title: { type: "string", description: "New task title (optional)" },
-                description: { type: "string", description: "New task description (optional)" },
+                description: { type: "string", description: "New task description in Markdown format. Use \\n for line breaks (optional)" },
                 priority: { type: "string", description: "New task priority (low, medium, high, critical) (optional)" },
                 tags: { type: "array", items: { type: "string" }, description: "New array of tags (optional)" },
                 dueDate: { type: "string", description: "New due date in ISO format (optional)" },
@@ -148,7 +156,7 @@ export class McpService {
           );
 
           const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-          const parsedDescription = description ? await marked.parse(description) : "";
+          const parsedDescription = description ? await marked.parse(formatMarkdownTitles(description), { breaks: true, gfm: true }) : "";
           const newTask = {
             id: taskId,
             title,
@@ -208,7 +216,7 @@ export class McpService {
 
           if (title !== undefined) project.tasks[taskId].title = title;
           if (description !== undefined) {
-             project.tasks[taskId].description = description ? await marked.parse(description) : "";
+             project.tasks[taskId].description = description ? await marked.parse(formatMarkdownTitles(description), { breaks: true, gfm: true }) : "";
           }
           if (priority !== undefined) project.tasks[taskId].priority = priority;
           if (tags !== undefined) project.tasks[taskId].tags = tags;
@@ -312,7 +320,15 @@ export class McpService {
 
   async handleSse(req: Request, res: Response) {
     this.logger.log("New MCP SSE connection establishing...");
-    const baseUrl = process.env.MCP_MESSAGES_ENDPOINT || "/mcp/messages";
+    let baseUrl = process.env.MCP_MESSAGES_ENDPOINT || "/api/mcp/messages";
+    
+    // Ensure baseUrl is an absolute URL
+    if (!baseUrl.startsWith("http")) {
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+      const host = req.headers.host || "cronowork.app";
+      baseUrl = `${protocol}://${host}${baseUrl.startsWith('/') ? '' : '/'}${baseUrl}`;
+    }
+
     const token = req.query.token as string;
     const endpoint = token ? `${baseUrl}?token=${token}` : baseUrl;
     const transport = new SSEServerTransport(endpoint, res);

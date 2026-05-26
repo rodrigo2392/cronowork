@@ -1,0 +1,27 @@
+diff --git a/node_modules/quilljs-markdown/src/tags/bold/index.js b/node_modules/quilljs-markdown/src/tags/bold/index.js
+index 4876c4f..d44d572 100644
+--- a/node_modules/quilljs-markdown/src/tags/bold/index.js
++++ b/node_modules/quilljs-markdown/src/tags/bold/index.js
+@@ -29,6 +29,9 @@ class Bold extends AbstractTag {
+           this.quillJS.deleteText(startIndex, annotatedText.length)
+           setTimeout(() => {
+             this.quillJS.insertText(startIndex, matchedText, { bold: true })
++            if (/^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑ\s]+:?$/.test(matchedText.trim()) || /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+:$/.test(matchedText.trim())) {
++              this.quillJS.insertText(startIndex + matchedText.length, '\n\n', { bold: false })
++            }
+             this.quillJS.format('bold', false)
+             resolve(true)
+           })
+diff --git a/node_modules/quilljs-markdown/src/tags/inlinecode/index.js b/node_modules/quilljs-markdown/src/tags/inlinecode/index.js
+index 974da59..7d1d82f 100644
+--- a/node_modules/quilljs-markdown/src/tags/inlinecode/index.js
++++ b/node_modules/quilljs-markdown/src/tags/inlinecode/index.js
+@@ -17,7 +17,7 @@ class inlineCode extends AbstractTag {
+       name: this.name,
+       pattern: this.pattern,
+       action: (text, selection, pattern, lineStart) => new Promise((resolve) => {
+-        let match = /(`){1}(.+)(`){1}/g.exec(text)
++        let match = /(`){1}([^`]+)(`){1}/g.exec(text)
+         if (!match || !this.activeTags.length) {
+           resolve(false)
+           return

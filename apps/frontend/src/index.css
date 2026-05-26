@@ -215,6 +215,15 @@ textarea:focus-visible {
   font-family: var(--font-sans) !important;
   font-size: 0.9rem !important;
 }
+.ql-editor code {
+  background-color: var(--bg-hover) !important;
+  border: 1px solid var(--border-hover) !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace !important;
+  color: var(--text-primary) !important;
+  font-size: 0.85em;
+}
 .ql-editor {
   color: var(--text-primary);
 }

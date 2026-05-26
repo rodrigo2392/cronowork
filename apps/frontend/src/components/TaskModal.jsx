@@ -5,8 +5,9 @@ import { useTranslation } from "../context/LanguageContext";
 import { useConfirm } from "../context/ConfirmContext";
 import * as Icons from "lucide-react";
 import { API_URL } from "../config";
-import ReactQuill from "react-quill";
+import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import QuillMarkdown from "quilljs-markdown";
 import { useAuth } from "../context/AuthContext";
 import DOMPurify from 'dompurify';
 
@@ -55,6 +56,163 @@ export default function TaskModal() {
   
   const quillNewRef = React.useRef(null);
   const quillReplyRef = React.useRef(null);
+  
+  const attachMarkdown = (el) => {
+    if (el) {
+      const editor = el.getEditor();
+      if (!editor.__markdown_initialized) {
+        new QuillMarkdown(editor, {
+          // Usamos el patrón por defecto de la librería para no romper el tipeo manual
+        });
+
+        const matchBoldTitle = (node, delta) => {
+          if (delta.ops && delta.ops.length === 1 && typeof delta.ops[0].insert === 'string') {
+            const text = delta.ops[0].insert.trim();
+            if (/^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑ\s]+$/.test(text) || /^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+:$/.test(text)) {
+              const Delta = Quill.import('delta');
+              return new Delta()
+                .insert('\n\n')
+                .insert(text, { bold: true })
+                .insert('\n');
+            }
+          }
+          return delta;
+        };
+
+        editor.clipboard.addMatcher('B', matchBoldTitle);
+        editor.clipboard.addMatcher('STRONG', matchBoldTitle);
+
+        editor.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
+          if (typeof node.data === 'string') {
+            const text = node.data;
+            const titleRegex = /\*\*([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑ\s]+:?|[A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+:)\*\*/g;
+            const codeRegex = /`([^`]+)`/g;
+            
+            let hasMatch = false;
+            let currentText = text;
+            const Delta = Quill.import('delta');
+            let newDelta = new Delta();
+            
+            // Si hay títulos en negritas
+            if (titleRegex.test(currentText)) {
+              hasMatch = true;
+              titleRegex.lastIndex = 0;
+              let lastIndex = 0;
+              let match;
+              while ((match = titleRegex.exec(currentText)) !== null) {
+                if (match.index > lastIndex) {
+                  // A las partes que no son títulos, les aplicaremos la búsqueda de código
+                  const unformattedPart = currentText.substring(lastIndex, match.index);
+                  const subDelta = processCodeRegex(unformattedPart, codeRegex, Delta);
+                  newDelta = newDelta.concat(subDelta);
+                }
+                newDelta.insert('\n\n');
+                newDelta.insert(match[1], { bold: true });
+                newDelta.insert('\n');
+                lastIndex = titleRegex.lastIndex;
+              }
+              if (lastIndex < currentText.length) {
+                const unformattedPart = currentText.substring(lastIndex);
+                const subDelta = processCodeRegex(unformattedPart, codeRegex, Delta);
+                newDelta = newDelta.concat(subDelta);
+              }
+            } else {
+              // No hay títulos, buscar solo código
+              if (codeRegex.test(currentText)) {
+                hasMatch = true;
+                codeRegex.lastIndex = 0;
+                newDelta = processCodeRegex(currentText, codeRegex, Delta);
+              }
+            }
+            
+            if (hasMatch) {
+              console.log("TEXT_NODE delta resultante:", JSON.stringify(newDelta.ops));
+              return newDelta;
+            }
+          }
+          return delta;
+        });
+
+        function processCodeRegex(text, regex, Delta) {
+          const delta = new Delta();
+          regex.lastIndex = 0;
+          let lastIndex = 0;
+          let match;
+          while ((match = regex.exec(text)) !== null) {
+            if (match.index > lastIndex) {
+              delta.insert(text.substring(lastIndex, match.index));
+            }
+            delta.insert(match[1], { code: true });
+            lastIndex = regex.lastIndex;
+          }
+          if (lastIndex < text.length) {
+            delta.insert(text.substring(lastIndex));
+          }
+          return delta;
+        }
+
+        // Elimina colores arbitrarios (como el naranja o verde) al pegar HTML de otras fuentes (ej. el chat)
+        editor.clipboard.addMatcher(Node.ELEMENT_NODE, (node, delta) => {
+          let newDelta = delta;
+          
+          // Primero, procesamos el texto combinado de todos los hijos para ver si hay comillas invertidas divididas en múltiples nodos (ej. spans de color de sintaxis)
+          const Delta = Quill.import('delta');
+          let text = '';
+          newDelta.ops.forEach(op => {
+            if (typeof op.insert === 'string') {
+              text += op.insert;
+            } else {
+              text += '\0';
+            }
+          });
+
+          const codeRegex = /`([^`]+)`/g;
+          if (codeRegex.test(text)) {
+            codeRegex.lastIndex = 0;
+            let modifier = new Delta();
+            let lastIndex = 0;
+            let match;
+
+            while ((match = codeRegex.exec(text)) !== null) {
+              const matchIndex = match.index;
+              if (matchIndex > lastIndex) {
+                modifier.retain(matchIndex - lastIndex);
+              }
+              modifier.delete(1);
+              modifier.retain(match[1].length, { code: true });
+              modifier.delete(1);
+              lastIndex = matchIndex + match[0].length;
+            }
+            newDelta = newDelta.compose(modifier);
+          }
+
+          // Ahora limpiamos los colores y forzamos el código si el nodo actual era explícitamente código
+          newDelta.ops.forEach(op => {
+            if (op.attributes) {
+              delete op.attributes.color;
+              delete op.attributes.background;
+            }
+          });
+          
+          const isCodeSpan = node.tagName === 'SPAN' && 
+            (node.classList.contains('markdown-code') || 
+             node.classList.contains('hljs') || 
+             (node.style && node.style.fontFamily && node.style.fontFamily.includes('mono')));
+             
+          if (isCodeSpan || node.tagName === 'CODE') {
+            newDelta.ops.forEach(op => {
+              op.attributes = op.attributes || {};
+              op.attributes.code = true;
+            });
+          }
+
+          return newDelta;
+        });
+
+        editor.__markdown_initialized = true;
+      }
+    }
+  };
 
   // Manual Time Tracker State
   const [manualHours, setManualHours] = useState("");
@@ -184,9 +342,32 @@ export default function TaskModal() {
     setCopiedLink(false);
   }, [editingTask, isTaskModalOpen]);
 
+  const formatHtmlTitles = (html) => {
+    if (!html) return html;
+    let formatted = html;
+    
+    // Divide el párrafo exactamente donde haya un título en negritas, sin importar su posición
+    formatted = formatted.replace(/<strong>([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑ\s]+:?)<\/strong>/g, 
+      '</p><p><br></p><p><strong>$1</strong></p><p>'
+    );
+    formatted = formatted.replace(/<strong>([A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]+:)<\/strong>/g, 
+      '</p><p><br></p><p><strong>$1</strong></p><p>'
+    );
+    
+    // Limpia etiquetas <p> vacías que se hayan generado al inicio o en medio
+    formatted = formatted.replace(/<p>\s*<\/p>/g, '');
+    
+    return formatted;
+  };
+
   const handleQuickSave = (field, value) => {
     if (!editingTask) return;
-    editTask(editingTask.id, { [field]: value });
+    let finalValue = value;
+    if (field === 'description') {
+       finalValue = formatHtmlTitles(value);
+       setDescription(finalValue);
+    }
+    editTask(editingTask.id, { [field]: finalValue });
   };
 
   // Handle live timer
@@ -222,7 +403,7 @@ export default function TaskModal() {
 
     const taskData = {
       title: title.trim(),
-      description: description.trim(),
+      description: formatHtmlTitles(description.trim()),
       priority,
       tags: finalTags,
       dueDate,
@@ -659,11 +840,15 @@ export default function TaskModal() {
               }}
             >
               <ReactQuill
-                ref={quillReplyRef}
+                ref={(el) => {
+                  quillReplyRef.current = el;
+                  attachMarkdown(el);
+                }}
                 theme="snow"
                 value={replyContent}
                 onChange={(content) => handleCommentChange(content, setReplyContent, 'reply')}
                 placeholder={t("task.comment_ph") || "Escribe un comentario..."}
+                formats={['header', 'bold', 'italic', 'underline', 'strike', 'blockquote', 'list', 'bullet', 'indent', 'link', 'image', 'code-block', 'code']}
               />
               {mentionState.target === 'reply' && renderMentionsList(setReplyContent)}
               <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginLeft: "4px" }}>
@@ -1018,10 +1203,12 @@ export default function TaskModal() {
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   <ReactQuill
+                    ref={attachMarkdown}
                     theme="snow"
                     value={description}
                     onChange={setDescription}
                     placeholder={t("modal.task.desc_ph")}
+                    formats={['header', 'bold', 'italic', 'underline', 'strike', 'blockquote', 'list', 'bullet', 'indent', 'link', 'image', 'code-block', 'code']}
                     style={{
                       backgroundColor: "var(--bg-tertiary)",
                       borderRadius: "var(--radius-md)",
@@ -1570,11 +1757,15 @@ export default function TaskModal() {
                   }}
                 >
                   <ReactQuill
-                    ref={quillNewRef}
+                    ref={(el) => {
+                      quillNewRef.current = el;
+                      attachMarkdown(el);
+                    }}
                     theme="snow"
                     value={newComment}
                     onChange={(content) => handleCommentChange(content, setNewComment, 'new')}
                     placeholder={t("task.comment_ph") || "Escribe un comentario..."}
+                    formats={['header', 'bold', 'italic', 'underline', 'strike', 'blockquote', 'list', 'bullet', 'indent', 'link', 'image', 'code-block', 'code']}
                   />
                   {mentionState.target === 'new' && renderMentionsList(setNewComment)}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
