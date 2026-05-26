@@ -1675,7 +1675,7 @@ export default function TaskModal() {
                               : "none",
                           }}
                         >
-                          {sub.text}
+                          {sub.text || sub.title}
                         </span>
                       </button>
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Github, Code2, Bot, Layers, Zap, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Github, Code2, Bot, Layers, Zap, Sun, Moon, Globe } from 'lucide-react';
+import { useTranslation } from '../context/LanguageContext';
 import '../styles/LandingPage.css';
 
 export default function LandingPage({ onNavigateToAuth }) {
+  const { t, locale, toggleLanguage } = useTranslation();
   const [theme, setTheme] = useState(localStorage.getItem('vibe_theme') || 'dark');
 
   useEffect(() => {
@@ -32,26 +34,26 @@ export default function LandingPage({ onNavigateToAuth }) {
   const features = [
     {
       icon: <Bot size={24} style={{ color: "var(--priority-critical)" }} />,
-      title: "IA Autónoma",
-      description: "Delega tareas, refactorización y planeación a agentes de IA que interactúan con tu tablero.",
+      title: t("landing.feat1_title") || "IA Autónoma",
+      description: t("landing.feat1_desc") || "Delega tareas, refactorización y planeación a agentes de IA que interactúan con tu tablero.",
       isLarge: true
     },
     {
       icon: <Layers size={24} style={{ color: "var(--accent-color)" }} />,
-      title: "Model Context Protocol",
-      description: "Conexión bidireccional para un contexto rico y ejecución de comandos directos.",
+      title: t("landing.feat2_title") || "Model Context Protocol",
+      description: t("landing.feat2_desc") || "Conexión bidireccional para un contexto rico y ejecución de comandos directos.",
       isLarge: false
     },
     {
       icon: <Zap size={24} style={{ color: "var(--priority-medium)" }} />,
-      title: "Rápido y Fluido",
-      description: "Actualizaciones en tiempo real y soporte avanzado para edición Markdown sin latencia.",
+      title: t("landing.feat3_title") || "Rápido y Fluido",
+      description: t("landing.feat3_desc") || "Actualizaciones en tiempo real y soporte avanzado para edición Markdown sin latencia.",
       isLarge: false
     },
     {
       icon: <Code2 size={24} style={{ color: "var(--completed-color)" }} />,
-      title: "100% Open Source",
-      description: "Modifica, mejora y adapta el entorno Kanban a las necesidades de tu equipo sin restricciones.",
+      title: t("landing.feat4_title") || "100% Open Source",
+      description: t("landing.feat4_desc") || "Modifica, mejora y adapta el entorno Kanban a las necesidades de tu equipo sin restricciones.",
       isLarge: true
     }
   ];
@@ -69,6 +71,9 @@ export default function LandingPage({ onNavigateToAuth }) {
           Cronowork
         </div>
         <div className="landing-nav-links">
+          <button onClick={toggleLanguage} className="theme-toggle-btn" aria-label="Toggle Language" title="Language">
+            <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{locale.toUpperCase()}</span>
+          </button>
           <button onClick={toggleTheme} className="theme-toggle-btn" aria-label="Toggle Theme">
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
@@ -76,7 +81,7 @@ export default function LandingPage({ onNavigateToAuth }) {
             GitHub
           </a>
           <button onClick={onNavigateToAuth} className="btn-primary" style={{ padding: "8px 20px", fontSize: "0.9rem" }}>
-            Iniciar Sesión
+            {t("landing.login") || "Iniciar Sesión"}
           </button>
         </div>
       </nav>
@@ -90,26 +95,47 @@ export default function LandingPage({ onNavigateToAuth }) {
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
         >
           <motion.div variants={itemVariants} className="open-source-badge">
-            <Github size={16} /> Orgullosamente Open Source
+            <Github size={16} /> {t("landing.badge") || "Orgullosamente Open Source"}
           </motion.div>
           
           <motion.h1 variants={itemVariants} className="hero-title">
-            El Kanban diseñado para <br />
-            <span>Agentes de IA</span>
+            {t("landing.title_1") || "El Kanban diseñado para "} <br />
+            <span>{t("landing.title_span") || "Agentes de IA"}</span>
           </motion.h1>
           
           <motion.p variants={itemVariants} className="hero-subtitle">
-            Un entorno de trabajo autónomo donde tú defines los objetivos y la IA interactúa directamente con tus proyectos mediante comandos estructurados.
+            {t("landing.subtitle") || "Un entorno de trabajo autónomo donde tú defines los objetivos y la IA interactúa directamente con tus proyectos mediante comandos estructurados."}
           </motion.p>
           
           <motion.div variants={itemVariants} className="hero-actions">
             <button onClick={onNavigateToAuth} className="btn-primary">
-              Comenzar gratis <ArrowRight size={18} />
+              {t("landing.btn_start") || "Comenzar gratis"} <ArrowRight size={18} />
             </button>
             <a href="https://github.com/rodrigo2392/cronowork" target="_blank" rel="noopener noreferrer" className="btn-secondary">
-              <Github size={18} /> Ver repositorio
+              <Github size={18} /> {t("landing.btn_repo") || "Ver repositorio"}
             </a>
           </motion.div>
+        </motion.div>
+      </section>
+
+      {/* App Showcase 3D Overlap Section */}
+      <section className="showcase-section">
+        <motion.div 
+          className="showcase-container"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
+          <div className="showcase-image-wrapper img-2">
+            <img src="/cap2.png" alt="Cronowork App Preview 2" />
+          </div>
+          <div className="showcase-image-wrapper img-3">
+            <img src="/cap3.png" alt="Cronowork App Preview 3" />
+          </div>
+          <div className="showcase-image-wrapper img-1">
+            <img src="/cap1.png" alt="Cronowork Main App Preview" />
+          </div>
         </motion.div>
       </section>
 
@@ -121,7 +147,7 @@ export default function LandingPage({ onNavigateToAuth }) {
           viewport={{ once: true }}
           className="section-title"
         >
-          Un nuevo paradigma de productividad
+          {t("landing.features_title") || "Un nuevo paradigma de productividad"}
         </motion.h2>
         
         <motion.div 
@@ -153,7 +179,7 @@ export default function LandingPage({ onNavigateToAuth }) {
           transition={{ duration: 0.6 }}
         >
           <img 
-            src="https://avatars.githubusercontent.com/u/91278835?v=4" 
+            src="https://rodrigomendez.dev/_next/image?url=%2Fimages%2Fperfil.png&w=1200&q=75" 
             alt="Rodrigo" 
             className="author-avatar"
             onError={(e) => {
@@ -167,17 +193,17 @@ export default function LandingPage({ onNavigateToAuth }) {
             @rodrigo2392
           </a>
           <p className="author-bio">
-            Desarrollador y creador de Cronowork. Apasionado por la inteligencia artificial, la productividad y el software libre. Construí este proyecto para explorar cómo los agentes autónomos pueden colaborar en interfaces estructuradas.
+            {t("landing.author_bio") || "Desarrollador y creador de Cronowork. Apasionado por la inteligencia artificial, la productividad y el software libre. Construí este proyecto para explorar cómo los agentes autónomos pueden colaborar en interfaces estructuradas."}
           </p>
           <a href="https://github.com/rodrigo2392/cronowork" target="_blank" rel="noopener noreferrer" className="btn-secondary">
-            <Github size={18} /> Seguir el proyecto
+            <Github size={18} /> {t("landing.author_btn") || "Seguir el proyecto"}
           </a>
         </motion.div>
       </section>
 
       {/* Footer */}
       <footer className="footer">
-        <p>© {new Date().getFullYear()} Cronowork. Lanzado bajo licencia Open Source.</p>
+        <p>{(t("landing.footer") || "© {year} Cronowork. Lanzado bajo licencia Open Source.").replace('{year}', new Date().getFullYear())}</p>
       </footer>
     </div>
   );

@@ -5,7 +5,14 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "img-src": ["'self'", "data:", "https://rodrigomendez.dev", "https://avatars.githubusercontent.com"],
+      },
+    },
+  }));
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   });

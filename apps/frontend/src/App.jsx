@@ -205,12 +205,11 @@ function MainApp() {
     }
   }, [user, token]);
 
-  if (!user && currentView === 'landing') {
+  if (!user) {
+    if (currentView === 'auth') {
+      return <AuthPage onBackToLanding={() => setCurrentView('landing')} />;
+    }
     return <LandingPage onNavigateToAuth={() => setCurrentView('auth')} />;
-  }
-
-  if (!user && currentView === 'auth') {
-    return <AuthPage onBackToLanding={() => setCurrentView('landing')} />;
   }
 
   if (isRedirecting) {

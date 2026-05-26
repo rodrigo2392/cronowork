@@ -19,6 +19,27 @@ export const es = {
   "auth.signup_link": "Regístrate",
   "auth.login_link": "Inicia Sesión",
 
+  // Landing Page
+  "landing.badge": "Orgullosamente Open Source",
+  "landing.title_1": "El Kanban diseñado para ",
+  "landing.title_span": "Agentes de IA",
+  "landing.subtitle": "Un entorno de trabajo autónomo donde tú defines los objetivos y la IA interactúa directamente con tus proyectos mediante comandos estructurados.",
+  "landing.btn_start": "Comenzar gratis",
+  "landing.btn_repo": "Ver repositorio",
+  "landing.features_title": "Un nuevo paradigma de productividad",
+  "landing.feat1_title": "IA Autónoma",
+  "landing.feat1_desc": "Delega tareas, refactorización y planeación a agentes de IA que interactúan con tu tablero.",
+  "landing.feat2_title": "Model Context Protocol",
+  "landing.feat2_desc": "Conexión bidireccional para un contexto rico y ejecución de comandos directos.",
+  "landing.feat3_title": "Rápido y Fluido",
+  "landing.feat3_desc": "Actualizaciones en tiempo real y soporte avanzado para edición Markdown sin latencia.",
+  "landing.feat4_title": "100% Open Source",
+  "landing.feat4_desc": "Modifica, mejora y adapta el entorno Kanban a las necesidades de tu equipo sin restricciones.",
+  "landing.author_bio": "Desarrollador y creador de Cronowork. Apasionado por la inteligencia artificial, la productividad y el software libre. Construí este proyecto para explorar cómo los agentes autónomos pueden colaborar en interfaces estructuradas.",
+  "landing.author_btn": "Seguir el proyecto",
+  "landing.footer": "© {year} Cronowork. Lanzado bajo licencia Open Source.",
+  "landing.login": "Iniciar Sesión",
+
   // Sidebar
   "sidebar.projects": "Proyectos",
   "sidebar.new_project": "Nuevo Proyecto",
