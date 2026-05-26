@@ -46,6 +46,21 @@ export class McpService {
                   type: "string",
                   description: "Task description",
                 },
+                priority: { type: "string", description: "Task priority (low, medium, high) (optional)" },
+                tags: { type: "array", items: { type: "string" }, description: "Array of tags (optional)" },
+                dueDate: { type: "string", description: "Due date in ISO format (optional)" },
+                subtasks: { 
+                  type: "array", 
+                  items: { 
+                    type: "object", 
+                    properties: { 
+                      id: { type: "string" }, 
+                      title: { type: "string" }, 
+                      completed: { type: "boolean" } 
+                    } 
+                  },
+                  description: "Array of subtask objects (optional)" 
+                }
               },
               required: ["projectId", "columnId", "title"],
             },
@@ -60,6 +75,21 @@ export class McpService {
                 taskId: { type: "string", description: "The ID of the task to update" },
                 title: { type: "string", description: "New task title (optional)" },
                 description: { type: "string", description: "New task description (optional)" },
+                priority: { type: "string", description: "New task priority (low, medium, high) (optional)" },
+                tags: { type: "array", items: { type: "string" }, description: "New array of tags (optional)" },
+                dueDate: { type: "string", description: "New due date in ISO format (optional)" },
+                subtasks: { 
+                  type: "array", 
+                  items: { 
+                    type: "object", 
+                    properties: { 
+                      id: { type: "string" }, 
+                      title: { type: "string" }, 
+                      completed: { type: "boolean" } 
+                    } 
+                  },
+                  description: "New array of subtask objects (optional)" 
+                },
                 newColumnId: { type: "string", description: "The ID of the new column to move the task to (optional)" }
               },
               required: ["projectId", "taskId"],
@@ -106,7 +136,7 @@ export class McpService {
       }
 
       if (request.params.name === "add_task") {
-        const { projectId, columnId, title, description } = request.params
+        const { projectId, columnId, title, description, priority, tags, dueDate, subtasks } = request.params
           .arguments as any;
 
         try {
@@ -121,10 +151,10 @@ export class McpService {
             id: taskId,
             title,
             description: description || "",
-            priority: "medium",
-            tags: [],
-            subtasks: [],
-            dueDate: "",
+            priority: priority || "medium",
+            tags: tags || [],
+            subtasks: subtasks || [],
+            dueDate: dueDate || "",
             createdAt: new Date().toISOString(),
           };
 
@@ -166,7 +196,7 @@ export class McpService {
       }
 
       if (request.params.name === "update_task") {
-        const { projectId, taskId, title, description, newColumnId } = request.params.arguments as any;
+        const { projectId, taskId, title, description, priority, tags, dueDate, subtasks, newColumnId } = request.params.arguments as any;
         try {
           const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
           
@@ -176,6 +206,10 @@ export class McpService {
 
           if (title !== undefined) project.tasks[taskId].title = title;
           if (description !== undefined) project.tasks[taskId].description = description;
+          if (priority !== undefined) project.tasks[taskId].priority = priority;
+          if (tags !== undefined) project.tasks[taskId].tags = tags;
+          if (dueDate !== undefined) project.tasks[taskId].dueDate = dueDate;
+          if (subtasks !== undefined) project.tasks[taskId].subtasks = subtasks;
 
           if (newColumnId) {
             // Find current column
