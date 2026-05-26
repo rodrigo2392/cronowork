@@ -3,6 +3,7 @@ import { BoardProvider, useBoard } from "./context/BoardContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider, useTranslation } from "./context/LanguageContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
+import LandingPage from "./components/LandingPage";
 import AuthPage from "./components/AuthPage";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
@@ -179,9 +180,13 @@ function MainApp() {
   const { user, token } = useAuth();
   const { t } = useTranslation();
   const [isRedirecting, setIsRedirecting] = React.useState(false);
+  
+  // Custom routing state: 'landing' -> 'auth' -> 'app'
+  const [currentView, setCurrentView] = React.useState('landing');
 
   React.useEffect(() => {
     if (user && token) {
+      setCurrentView('app'); // Auto-navigate to app if authenticated
       const params = new URLSearchParams(window.location.search);
       const callbackUrl = params.get("callback");
       if (callbackUrl) {
@@ -200,8 +205,12 @@ function MainApp() {
     }
   }, [user, token]);
 
-  if (!user) {
-    return <AuthPage />;
+  if (!user && currentView === 'landing') {
+    return <LandingPage onNavigateToAuth={() => setCurrentView('auth')} />;
+  }
+
+  if (!user && currentView === 'auth') {
+    return <AuthPage onBackToLanding={() => setCurrentView('landing')} />;
   }
 
   if (isRedirecting) {

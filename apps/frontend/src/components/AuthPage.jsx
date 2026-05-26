@@ -4,7 +4,7 @@ import { useTranslation } from "../context/LanguageContext";
 import * as Icons from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function AuthPage() {
+export default function AuthPage({ onBackToLanding }) {
   const { login, register } = useAuth();
   const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
@@ -56,32 +56,52 @@ export default function AuthPage() {
           left: "40px",
           display: "flex",
           alignItems: "center",
-          gap: "12px",
+          justifyContent: "space-between",
+          width: "calc(100% - 80px)"
         }}
       >
-        <div
-          style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "8px",
-            background: "linear-gradient(135deg, var(--accent-color), #818cf8)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "white",
-          }}
-        >
-          <Icons.Kanban size={20} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Icons.Layers
+            size={32}
+            style={{
+              color: "var(--accent-color)",
+              filter: "drop-shadow(0 0 8px rgba(99, 102, 241, 0.4))",
+            }}
+          />
+          <h1
+            style={{
+              fontSize: "1.5rem",
+              fontWeight: 800,
+              color: "var(--text-primary)",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            Cronowork
+          </h1>
         </div>
-        <span
-          style={{
-            fontSize: "1.25rem",
-            fontWeight: 700,
-            color: "var(--text-primary)",
-          }}
-        >
-          Cronowork
-        </span>
+        {onBackToLanding && (
+          <button
+            onClick={onBackToLanding}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              padding: '8px 12px',
+              borderRadius: '8px',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <Icons.ArrowLeft size={16} /> Volver al inicio
+          </button>
+        )}
       </div>
 
       <motion.div
