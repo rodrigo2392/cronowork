@@ -326,7 +326,21 @@ export class McpService {
 
     const token = req.query.token as string;
     const endpoint = token ? `${baseUrl}?token=${token}` : baseUrl;
-    this.logger.log(`MCP endpoint resolved: ${endpoint.substring(0, 80)}...`);
+
+    // The MCP SDK sends a relative URL in the endpoint event even when given an absolute URL.
+    // Intercept res.write to force the correct absolute URL before the SDK writes it.
+    const originalWrite = res.write.bind(res);
+    let endpointEventPatched = false;
+    (res as any).write = function (chunk: any, ...args: any[]) {
+      if (!endpointEventPatched && typeof chunk === 'string' && chunk.includes('event: endpoint')) {
+        endpointEventPatched = true;
+        const sessionMatch = chunk.match(/sessionId=([\w-]+)/);
+        const sessionId = sessionMatch ? sessionMatch[1] : '';
+        chunk = `event: endpoint\ndata: ${endpoint}&sessionId=${sessionId}\n\n`;
+      }
+      return originalWrite(chunk, ...args);
+    };
+
     const transport = new SSEServerTransport(endpoint, res);
 
     const server = new Server(
