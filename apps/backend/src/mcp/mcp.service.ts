@@ -368,6 +368,7 @@ export class McpService {
 
   async handleMessages(req: Request, res: Response) {
     const sessionId = req.query.sessionId as string;
+    this.logger.log(`POST /mcp/messages — sessionId: ${sessionId}, activeSessions: ${this.sessions.size}`);
 
     if (!sessionId) {
       this.logger.error("Missing sessionId in message request");
@@ -377,11 +378,12 @@ export class McpService {
 
     const session = this.sessions.get(sessionId);
     if (!session) {
-      this.logger.error(`Received message for unknown session: ${sessionId}`);
+      this.logger.error(`Session not found: ${sessionId}. Active sessions: ${[...this.sessions.keys()].join(', ')}`);
       res.status(404).send("Session not found");
       return;
     }
 
+    this.logger.log(`Handling message for session: ${sessionId}`);
     await session.transport.handlePostMessage(req, res, req.body);
   }
 }

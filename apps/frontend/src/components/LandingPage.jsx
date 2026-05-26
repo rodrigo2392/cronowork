@@ -1,47 +1,58 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Github, Code2, Bot, Layers, Zap } from 'lucide-react';
+import { ArrowRight, Github, Code2, Bot, Layers, Zap, Sun, Moon } from 'lucide-react';
 import '../styles/LandingPage.css';
 
 export default function LandingPage({ onNavigateToAuth }) {
+  const [theme, setTheme] = useState(localStorage.getItem('vibe_theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('vibe_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { 
       opacity: 1,
-      transition: { staggerChildren: 0.2 }
+      transition: { staggerChildren: 0.15 }
     }
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
   };
 
   const features = [
     {
-      icon: <Bot size={28} style={{ color: "#6366f1" }} />,
-      title: "IA Autónoma Integrada",
-      description: "Delega tareas, refactorización y planeación a agentes de IA que interactúan directamente con tu tablero.",
-      bgColor: "rgba(99, 102, 241, 0.1)"
+      icon: <Bot size={24} style={{ color: "var(--priority-critical)" }} />,
+      title: "IA Autónoma",
+      description: "Delega tareas, refactorización y planeación a agentes de IA que interactúan con tu tablero.",
+      isLarge: true
     },
     {
-      icon: <Code2 size={28} style={{ color: "#10b981" }} />,
-      title: "Open Source & Extensible",
-      description: "Código abierto al 100%. Modifica, mejora y adapta el entorno Kanban a tus necesidades específicas.",
-      bgColor: "rgba(16, 185, 129, 0.1)"
+      icon: <Layers size={24} style={{ color: "var(--accent-color)" }} />,
+      title: "Model Context Protocol",
+      description: "Conexión bidireccional para un contexto rico y ejecución de comandos directos.",
+      isLarge: false
     },
     {
-      icon: <Layers size={28} style={{ color: "#f59e0b" }} />,
-      title: "Protocolo MCP",
-      description: "Conexión bidireccional mediante Model Context Protocol para un contexto rico y comandos ejecutables.",
-      bgColor: "rgba(245, 158, 11, 0.1)"
+      icon: <Zap size={24} style={{ color: "var(--priority-medium)" }} />,
+      title: "Rápido y Fluido",
+      description: "Actualizaciones en tiempo real y soporte avanzado para edición Markdown sin latencia.",
+      isLarge: false
     },
     {
-      icon: <Zap size={28} style={{ color: "#c026d3" }} />,
-      title: "Rápido como el rayo",
-      description: "Interfaz fluida con actualizaciones en tiempo real y soporte avanzado para edición Markdown.",
-      bgColor: "rgba(192, 38, 211, 0.1)"
+      icon: <Code2 size={24} style={{ color: "var(--completed-color)" }} />,
+      title: "100% Open Source",
+      description: "Modifica, mejora y adapta el entorno Kanban a las necesidades de tu equipo sin restricciones.",
+      isLarge: true
     }
   ];
 
@@ -49,8 +60,7 @@ export default function LandingPage({ onNavigateToAuth }) {
     <div className="landing-container">
       {/* Background Elements */}
       <div className="landing-bg"></div>
-      <div className="orb-1"></div>
-      <div className="orb-2"></div>
+      <div className="glow-center"></div>
 
       {/* Navbar */}
       <nav className="landing-nav">
@@ -59,6 +69,9 @@ export default function LandingPage({ onNavigateToAuth }) {
           Cronowork
         </div>
         <div className="landing-nav-links">
+          <button onClick={toggleTheme} className="theme-toggle-btn" aria-label="Toggle Theme">
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
           <a href="https://github.com/rodrigo2392/cronowork" target="_blank" rel="noopener noreferrer" className="landing-nav-link">
             GitHub
           </a>
@@ -77,7 +90,7 @@ export default function LandingPage({ onNavigateToAuth }) {
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
         >
           <motion.div variants={itemVariants} className="open-source-badge">
-            <Github size={16} /> Proudly Open Source
+            <Github size={16} /> Orgullosamente Open Source
           </motion.div>
           
           <motion.h1 variants={itemVariants} className="hero-title">
@@ -86,7 +99,7 @@ export default function LandingPage({ onNavigateToAuth }) {
           </motion.h1>
           
           <motion.p variants={itemVariants} className="hero-subtitle">
-            Un entorno de trabajo autónomo donde tú defines los objetivos y la IA interactúa directamente con tus proyectos usando el Model Context Protocol.
+            Un entorno de trabajo autónomo donde tú defines los objetivos y la IA interactúa directamente con tus proyectos mediante comandos estructurados.
           </motion.p>
           
           <motion.div variants={itemVariants} className="hero-actions">
@@ -100,7 +113,7 @@ export default function LandingPage({ onNavigateToAuth }) {
         </motion.div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Bento Box */}
       <section className="features-section">
         <motion.h2 
           initial={{ opacity: 0, y: 20 }}
@@ -108,19 +121,19 @@ export default function LandingPage({ onNavigateToAuth }) {
           viewport={{ once: true }}
           className="section-title"
         >
-          Características de Próxima Generación
+          Un nuevo paradigma de productividad
         </motion.h2>
         
         <motion.div 
-          className="features-grid"
+          className="bento-grid"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={containerVariants}
         >
           {features.map((feature, index) => (
-            <motion.div key={index} variants={itemVariants} className="feature-card">
-              <div className="feature-icon-wrapper" style={{ backgroundColor: feature.bgColor }}>
+            <motion.div key={index} variants={itemVariants} className={`bento-card ${feature.isLarge ? 'bento-large' : ''}`}>
+              <div className="feature-icon-wrapper">
                 {feature.icon}
               </div>
               <h3>{feature.title}</h3>
@@ -140,13 +153,12 @@ export default function LandingPage({ onNavigateToAuth }) {
           transition={{ duration: 0.6 }}
         >
           <img 
-            src="https://avatars.githubusercontent.com/u/14493397?v=4" 
+            src="https://avatars.githubusercontent.com/u/91278835?v=4" 
             alt="Rodrigo" 
             className="author-avatar"
             onError={(e) => {
-              // Fallback if GitHub avatar fails
               e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
-              e.target.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
+              e.target.style.backgroundColor = "var(--bg-secondary)";
               e.target.style.padding = "20px";
             }}
           />
@@ -155,7 +167,7 @@ export default function LandingPage({ onNavigateToAuth }) {
             @rodrigo2392
           </a>
           <p className="author-bio">
-            Desarrollador y creador de Cronowork. Apasionado por la inteligencia artificial, la productividad y el software de código abierto. Creé este proyecto para explorar los límites de la interacción humano-máquina a través de interfaces estructuradas.
+            Desarrollador y creador de Cronowork. Apasionado por la inteligencia artificial, la productividad y el software libre. Construí este proyecto para explorar cómo los agentes autónomos pueden colaborar en interfaces estructuradas.
           </p>
           <a href="https://github.com/rodrigo2392/cronowork" target="_blank" rel="noopener noreferrer" className="btn-secondary">
             <Github size={18} /> Seguir el proyecto
