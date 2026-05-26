@@ -5,12 +5,14 @@ import { ProjectsService } from './projects.service';
 import { Project, ProjectSchema } from './schemas/project.schema';
 import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { EventsModule } from '../events/events.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Project.name, schema: ProjectSchema }]),
     UsersModule,
-    NotificationsModule
+    NotificationsModule,
+    EventsModule
   ],
   controllers: [ProjectsController],
   providers: [ProjectsService],

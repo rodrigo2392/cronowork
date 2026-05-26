@@ -5,6 +5,7 @@ import { useBoard } from "../context/BoardContext";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "../context/LanguageContext";
 import { useConfirm } from "../context/ConfirmContext";
+import { useSocket } from "../context/SocketContext";
 import ProfileModal from "./ProfileModal";
 import { API_URL } from "../config";
 
@@ -52,15 +53,42 @@ export default function Header() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifPopover, setShowNotifPopover] = useState(false);
   const { token } = useAuth();
+  const { socket } = useSocket();
+  const [aiConfigured, setAiConfigured] = useState(true);
 
   React.useEffect(() => {
     if (token) {
       fetchNotifications();
-      // Polling every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
+      fetchAiStatus();
     }
   }, [token]);
+
+  React.useEffect(() => {
+    if (socket) {
+      socket.on('notification_created', (newNotif) => {
+        setNotifications((prev) => [newNotif, ...prev]);
+        setUnreadCount((prev) => prev + 1);
+      });
+
+      return () => {
+        socket.off('notification_created');
+      };
+    }
+  }, [socket]);
+
+  const fetchAiStatus = async () => {
+    try {
+      const res = await fetch(`${API_URL}/ai/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiConfigured(data.isConfigured);
+      }
+    } catch (err) {
+      console.error("Failed to fetch AI status:", err);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -195,6 +223,13 @@ export default function Header() {
           setTimeout(() => {
             setEditingTask(targetProject.tasks[notif.taskId]);
             setIsTaskModalOpen(true);
+            // Auto-scroll to comments section
+            setTimeout(() => {
+              const commentsSection = document.getElementById("task-comments-section");
+              if (commentsSection) {
+                commentsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            }, 300);
           }, 50);
         }
       }
@@ -926,37 +961,40 @@ export default function Header() {
           </select>
 
           {/* AI Task Generator Button */}
-          <button
-            onClick={() => setIsAiModalOpen(true)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "10px 16px",
-              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))",
-              border: "1px solid rgba(168, 85, 247, 0.3)",
-              borderRadius: "var(--radius-md)",
-              color: "#a855f7",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all var(--transition-fast)",
-              boxShadow: "0 0 10px rgba(168, 85, 247, 0.1) inset"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "linear-gradient(135deg, var(--accent-color), #a855f7)";
-              e.currentTarget.style.color = "#ffffff";
-              e.currentTarget.style.boxShadow = "0 4px 12px rgba(168, 85, 247, 0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))";
-              e.currentTarget.style.color = "#a855f7";
-              e.currentTarget.style.boxShadow = "0 0 10px rgba(168, 85, 247, 0.1) inset";
-            }}
-          >
-            <Icons.Sparkles size={18} />
-            <span>{t("header.ai_btn") || "Generar Tareas"}</span>
-          </button>
+          {aiConfigured && (
+            <button
+              onClick={() => setIsAiModalOpen(true)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "10px 16px",
+                background: "linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))",
+                border: "1px solid rgba(168, 85, 247, 0.3)",
+                borderRadius: "var(--radius-md)",
+                color: "#a855f7",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all var(--transition-fast)",
+                boxShadow: "0 0 10px rgba(168, 85, 247, 0.1) inset"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, var(--accent-color), #a855f7)";
+                e.currentTarget.style.color = "#ffffff";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(168, 85, 247, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))";
+                e.currentTarget.style.color = "#a855f7";
+                e.currentTarget.style.boxShadow = "0 0 10px rgba(168, 85, 247, 0.1) inset";
+              }}
+              title="Generar tareas con IA"
+            >
+              <Icons.Sparkles size={18} />
+              <span>{t("header.ai_btn") || "Generar Tareas"}</span>
+            </button>
+          )}
 
           {/* Add Column Button */}
           {showAddCol ? (

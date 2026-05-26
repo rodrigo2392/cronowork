@@ -3,6 +3,7 @@ import { BoardProvider, useBoard } from "./context/BoardContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider, useTranslation } from "./context/LanguageContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
+import { SocketProvider } from "./context/SocketContext";
 import LandingPage from "./components/LandingPage";
 import AuthPage from "./components/AuthPage";
 import Sidebar from "./components/Sidebar";
@@ -276,9 +277,11 @@ export default function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <ConfirmProvider>
-          <MainApp />
-        </ConfirmProvider>
+        <SocketProvider>
+          <ConfirmProvider>
+            <MainApp />
+          </ConfirmProvider>
+        </SocketProvider>
       </AuthProvider>
     </LanguageProvider>
   );

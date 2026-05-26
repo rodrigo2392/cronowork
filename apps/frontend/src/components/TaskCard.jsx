@@ -36,15 +36,30 @@ export default function TaskCard({ task, index, columnId }) {
     task.subtasks?.filter((s) => s.completed).length || 0;
   const hasSubtasks = totalSubtasks > 0;
 
-  // Due date status
   const isOverdue = () => {
     if (!task.dueDate) return false;
-    if (columnId.includes("done")) return false; // Not overdue if already completed
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    if (columnId.includes("done")) return false;
     const due = new Date(task.dueDate);
     due.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     return due < today;
+  };
+
+  const timeAgo = (dateString, loc = "es") => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.round((now - date) / 1000);
+    const minutes = Math.round(seconds / 60);
+    const hours = Math.round(minutes / 60);
+    const days = Math.round(hours / 24);
+
+    if (seconds < 60) return loc === 'es' ? "hace un momento" : "just now";
+    if (minutes < 60) return loc === 'es' ? `hace ${minutes} minuto${minutes !== 1 ? 's' : ''}` : `${minutes} min ago`;
+    if (hours < 24) return loc === 'es' ? `hace ${hours} hora${hours !== 1 ? 's' : ''}` : `${hours} hours ago`;
+    if (days < 7) return loc === 'es' ? `hace ${days} día${days !== 1 ? 's' : ''}` : `${days} days ago`;
+    return date.toLocaleDateString(loc === 'es' ? 'es-ES' : 'en-US');
   };
 
   const getPriorityLabel = (prio) => {
@@ -387,6 +402,30 @@ export default function TaskCard({ task, index, columnId }) {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* AI Metrics Footer */}
+            {(task.tokensConsumed || task.model || task.timeSpent || task.cost) && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: "6px",
+                  paddingTop: "6px",
+                  borderTop: "1px dashed rgba(168, 85, 247, 0.2)",
+                  fontSize: "0.68rem",
+                  color: "#a855f7",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Icons.Sparkles size={12} />
+                  <span style={{ fontWeight: 500 }}>{task.model || "IA"}</span>
+                </div>
+                <span style={{ color: "rgba(168, 85, 247, 0.7)" }}>
+                  {task.updatedAt ? (locale === 'es' ? 'Actualizado ' : 'Updated ') + timeAgo(task.updatedAt, locale) : (task.createdAt ? (locale === 'es' ? 'Creado ' : 'Created ') + timeAgo(task.createdAt, locale) : "")}
+                </span>
               </div>
             )}
               </div>

@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { useTranslation } from './LanguageContext';
+import { useSocket } from './SocketContext';
 import { API_URL } from '../config';
 
 const BoardContext = createContext(undefined);
@@ -25,7 +26,80 @@ export const BoardProvider = ({ children }) => {
   const [initialUrlParsed, setInitialUrlParsed] = useState(false);
   const [viewingUserProfile, setViewingUserProfile] = useState(null);
 
-  // Fetch from backend
+  const { socket } = useSocket();
+
+  // Create a reusable fetch function for the current user's projects
+  const refreshProjects = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/projects`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const data = await res.json();
+      
+      if (data && Array.isArray(data) && data.length > 0) {
+        const cleanData = data.map(project => {
+          const seenTaskIds = new Set();
+          const newColumns = {};
+          if (project.columnOrder && project.columns) {
+            for (const colId of project.columnOrder) {
+              const col = project.columns[colId];
+              if (!col) continue;
+              const uniqueTaskIds = [];
+              for (const id of (col.taskIds || [])) {
+                if (!seenTaskIds.has(id)) {
+                  seenTaskIds.add(id);
+                  uniqueTaskIds.push(id);
+                }
+              }
+              newColumns[colId] = { ...col, taskIds: uniqueTaskIds };
+            }
+          }
+          return {
+            ...project,
+            tasks: project.tasks || {},
+            columns: newColumns || project.columns || {},
+            columnOrder: project.columnOrder || [],
+            activityLog: project.activityLog || []
+          };
+        });
+        setProjects(cleanData);
+        
+        setActiveProjectId(prev => {
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlProject = urlParams.get('project');
+          if (urlProject && cleanData.some(p => p.id === urlProject)) {
+            return urlProject;
+          }
+          if (prev && cleanData.some(p => p.id === prev)) return prev;
+          return cleanData[0].id;
+        });
+      } else {
+        setProjects([]);
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setFetchError(true);
+    } finally {
+      setIsProjectsLoading(false);
+    }
+  }, [token]);
+
+  // Listen for socket events to refresh projects automatically
+  useEffect(() => {
+    if (socket) {
+      socket.on('project_updated', (data) => {
+        refreshProjects();
+      });
+
+      return () => {
+        socket.off('project_updated');
+      };
+    }
+  }, [socket, refreshProjects]);
+
+  // Fetch from backend on mount
   useEffect(() => {
     if (!token) {
       setIsProjectsLoading(false);
@@ -45,66 +119,9 @@ export const BoardProvider = ({ children }) => {
         if (Array.isArray(data)) setAllUsers(data);
       })
       .catch(err => console.error("Could not fetch users:", err));
-    fetch(`${API_URL}/projects`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        if (data && Array.isArray(data) && data.length > 0) {
-          // Sync backend data into state (removing local duplicates just in case)
-          const cleanData = data.map(project => {
-            const seenTaskIds = new Set();
-            const newColumns = {};
-            if (project.columnOrder && project.columns) {
-              for (const colId of project.columnOrder) {
-                const col = project.columns[colId];
-                if (!col) continue;
-                const uniqueTaskIds = [];
-                for (const id of (col.taskIds || [])) {
-                  if (!seenTaskIds.has(id)) {
-                    seenTaskIds.add(id);
-                    uniqueTaskIds.push(id);
-                  }
-                }
-                newColumns[colId] = { ...col, taskIds: uniqueTaskIds };
-              }
-            }
-            return {
-              ...project,
-              tasks: project.tasks || {},
-              columns: newColumns || project.columns || {},
-              columnOrder: project.columnOrder || [],
-              activityLog: project.activityLog || []
-            };
-          });
-          setProjects(cleanData);
-          
-          // Ensure activeProjectId is valid
-          setActiveProjectId(prev => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlProject = urlParams.get('project');
-            if (urlProject && cleanData.some(p => p.id === urlProject)) {
-              return urlProject;
-            }
-            if (prev && cleanData.some(p => p.id === prev)) return prev;
-            return cleanData[0].id;
-          });
-        } else {
-          // Backend is empty
-          setProjects([]);
-        }
-      })
-      .catch(err => {
-        console.error("Could not fetch from backend:", err);
-        setFetchError(true);
-      })
-      .finally(() => {
-        setIsProjectsLoading(false);
-      });
-  }, [token]);
+      
+    refreshProjects();
+  }, [token, refreshProjects]);
 
   const [activeProjectId, setActiveProjectId] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);

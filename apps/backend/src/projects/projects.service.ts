@@ -4,13 +4,15 @@ import { Model } from 'mongoose';
 import { Project } from './schemas/project.schema';
 import { UsersService } from '../users/users.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectModel(Project.name) private projectModel: Model<Project>,
-    private usersService: UsersService,
-    private notificationsService: NotificationsService
+    private readonly usersService: UsersService,
+    private readonly notificationsService: NotificationsService,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async findAll(userId: string, email: string): Promise<Project[]> {
@@ -53,6 +55,14 @@ export class ProjectsService {
        
        const newProj = new this.projectModel({ ...projectData, userId, id });
        return newProj.save();
+    }
+    if (updatedProject) {
+      this.eventsGateway.emitToUser(updatedProject.userId, 'project_updated', { projectId: updatedProject.id });
+      if (updatedProject.sharedWith && Array.isArray(updatedProject.sharedWith)) {
+        updatedProject.sharedWith.forEach(uid => {
+          this.eventsGateway.emitToUser(uid, 'project_updated', { projectId: updatedProject.id });
+        });
+      }
     }
     
     return updatedProject;

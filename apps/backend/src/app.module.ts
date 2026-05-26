@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { AiModule } from './ai/ai.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { EventsModule } from './events/events.module';
 
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -39,6 +40,7 @@ import { APP_GUARD } from '@nestjs/core';
     McpModule,
     AiModule,
     NotificationsModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [

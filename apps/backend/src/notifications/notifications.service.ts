@@ -2,11 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Notification } from './schemas/notification.schema';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class NotificationsService {
   constructor(
     @InjectModel(Notification.name) private notificationModel: Model<Notification>,
+    private readonly eventsGateway: EventsGateway,
   ) {}
 
   async findAllForUser(userId: string): Promise<Notification[]> {
@@ -19,7 +21,14 @@ export class NotificationsService {
 
   async create(data: Partial<Notification>): Promise<Notification> {
     const newNotification = new this.notificationModel(data);
-    return newNotification.save();
+    const saved = await newNotification.save();
+    
+    // Emit real-time notification
+    if (saved.userId) {
+      this.eventsGateway.emitToUser(saved.userId, 'notification_created', saved);
+    }
+    
+    return saved;
   }
 
   async markAsRead(id: string, userId: string): Promise<Notification> {

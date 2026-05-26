@@ -1774,6 +1774,7 @@ export default function TaskModal() {
             {/* Comments Section */}
             {editingTask && (
               <div
+                id="task-comments-section"
                 style={{
                   display: "flex",
                   flexDirection: "column",

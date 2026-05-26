@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Request } from 'express';
@@ -7,6 +7,11 @@ import { Request } from 'express';
 @Controller('ai')
 export class AiController {
   constructor(private readonly aiService: AiService) {}
+
+  @Get('status')
+  getStatus() {
+    return { isConfigured: !!process.env.OPENAI_API_KEY };
+  }
 
   @Post('generate')
   async generateTasks(
