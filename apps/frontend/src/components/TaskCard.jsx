@@ -7,7 +7,7 @@ import * as Icons from "lucide-react";
 
 export default function TaskCard({ task, index, columnId }) {
   const { setEditingTask, setIsTaskModalOpen, setActiveColumnId, deleteTask, activeTracker } = useBoard();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { confirm } = useConfirm();
 
   const handleCardClick = () => {
