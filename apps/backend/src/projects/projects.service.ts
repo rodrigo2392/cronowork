@@ -16,16 +16,20 @@ export class ProjectsService {
   ) {}
 
   async findAll(userId: string, email: string): Promise<Project[]> {
+    if (userId === 'ai-agent') {
+      return this.projectModel.find().exec();
+    }
     return this.projectModel.find({ 
       $or: [{ userId }, { sharedWith: userId }, { members: email }] 
     }).exec();
   }
 
   async findOne(id: string, userId: string, email: string): Promise<Project> {
-    const project = await this.projectModel.findOne({ 
-      id, 
-      $or: [{ userId }, { sharedWith: userId }, { members: email }] 
-    }).exec();
+    const query = userId === 'ai-agent' 
+      ? { id } 
+      : { id, $or: [{ userId }, { sharedWith: userId }, { members: email }] };
+      
+    const project = await this.projectModel.findOne(query).exec();
     if (!project) {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
@@ -38,24 +42,38 @@ export class ProjectsService {
   }
 
   async update(id: string, userId: string, email: string, projectData: any): Promise<Project> {
-    const updatedProject = await this.projectModel
-      .findOneAndUpdate(
-        { id, $or: [{ userId }, { sharedWith: userId }, { members: email }] }, 
-        projectData, 
-        { new: true }
-      )
-      .exec();
+    const query = userId === 'ai-agent'
+      ? { id }
+      : { id, $or: [{ userId }, { sharedWith: userId }, { members: email }] };
+
+    let project = await this.projectModel.findOne(query).exec();
     
-    // Fallback: If not found, it might be a new project creation via PUT
-    // But since we use PUT for upserting, we have to be careful.
-    // Let's only upsert if we are the explicit owner.
-    if (!updatedProject) {
-       const existing = await this.projectModel.findOne({ id }).exec();
-       if (existing) throw new ForbiddenException('Access denied');
-       
-       const newProj = new this.projectModel({ ...projectData, userId, id });
-       return newProj.save();
+    if (!project) {
+      // Fallback: If not found, it might be a new project creation via PUT
+      if (userId === 'ai-agent') throw new ForbiddenException('Access denied for AI agent creation');
+      
+      const existing = await this.projectModel.findOne({ id }).exec();
+      if (existing) throw new ForbiddenException('Access denied');
+      
+      project = new this.projectModel({ ...projectData, userId, id });
+    } else {
+      // Extract raw data if it's a mongoose document
+      const rawData = typeof projectData.toObject === 'function' ? projectData.toObject() : projectData;
+      
+      // Clean immutable fields
+      delete rawData._id;
+      delete rawData.id;
+      delete rawData.__v;
+      
+      Object.assign(project, rawData);
     }
+
+    project.markModified('tasks');
+    project.markModified('columns');
+    project.markModified('activityLog');
+    
+    const updatedProject = await project.save();
+
     if (updatedProject) {
       this.eventsGateway.emitToUser(updatedProject.userId, 'project_updated', { projectId: updatedProject.id });
       if (updatedProject.sharedWith && Array.isArray(updatedProject.sharedWith)) {

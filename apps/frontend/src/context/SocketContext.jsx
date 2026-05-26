@@ -23,6 +23,18 @@ export function SocketProvider({ children }) {
         }
       });
 
+      newSocket.on('connect', () => {
+        console.log('Socket connected successfully:', newSocket.id);
+      });
+
+      newSocket.on('connect_error', (err) => {
+        console.error('Socket connection error:', err.message);
+      });
+
+      newSocket.on('disconnect', (reason) => {
+        console.log('Socket disconnected:', reason);
+      });
+
       setSocket(newSocket);
 
       return () => {
