@@ -15,6 +15,17 @@ import { EventsModule } from './events/events.module';
 
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { Injectable, ExecutionContext } from '@nestjs/common';
+
+@Injectable()
+export class CustomThrottlerGuard extends ThrottlerGuard {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (context.getType() === 'ws') {
+      return true; // Skip throttling for WebSockets to prevent crashes
+    }
+    return super.canActivate(context);
+  }
+}
 
 @Module({
   imports: [
@@ -25,7 +36,7 @@ import { APP_GUARD } from '@nestjs/core';
     ConfigModule.forRoot({ isGlobal: true }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'frontend', 'dist'),
-      exclude: ['/api/(.*)', '/mcp/(.*)', '/projects/(.*)', '/auth/(.*)', '/users/(.*)', '/ai/(.*)', '/notifications/(.*)'],
+      exclude: ['/api/(.*)', '/mcp/(.*)', '/projects/(.*)', '/auth/(.*)', '/users/(.*)', '/ai/(.*)', '/notifications/(.*)', '/socket.io/(.*)'],
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
@@ -47,7 +58,7 @@ import { APP_GUARD } from '@nestjs/core';
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard
+      useClass: CustomThrottlerGuard
     }
   ],
 })

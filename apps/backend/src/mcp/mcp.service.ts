@@ -39,8 +39,31 @@ export class McpService {
         tools: [
           {
             name: "list_projects",
-            description: "List all available projects in the Kanban board",
+            description: "List all available projects (Shallow fetch: returns only id, name, description, and task count). Use get_project_board to see the tasks.",
             inputSchema: { type: "object", properties: {} },
+          },
+          {
+            name: "get_project_board",
+            description: "Get the Kanban board state of a specific project (excluding activity log and truncating long task descriptions).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project to retrieve" }
+              },
+              required: ["projectId"],
+            },
+          },
+          {
+            name: "get_task_details",
+            description: "Get the complete details of a specific task (including full description and all comments).",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project" },
+                taskId: { type: "string", description: "The ID of the task" }
+              },
+              required: ["projectId", "taskId"],
+            },
           },
           {
             name: "add_task",
@@ -168,9 +191,64 @@ export class McpService {
 
       if (request.params.name === "list_projects") {
         const projects = await this.projectsService.findAll(AI_AGENT_USER_ID, AI_AGENT_EMAIL);
-        return {
-          content: [{ type: "text", text: JSON.stringify(projects, null, 2) }],
-        };
+        const shallowProjects = projects.map(p => {
+          const raw = typeof p.toObject === 'function' ? p.toObject() : p;
+          return {
+            id: raw.id,
+            name: raw.name,
+            description: raw.description,
+            taskCount: raw.tasks ? Object.keys(raw.tasks).length : 0
+          };
+        });
+        // Minified JSON (no spaces) to save tokens
+        return { content: [{ type: "text", text: JSON.stringify(shallowProjects) }] };
+      }
+
+      if (request.params.name === "get_project_board") {
+        const { projectId } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          const raw = typeof project.toObject === 'function' ? project.toObject() : project;
+          
+          // Omit activityLog to save tokens
+          delete raw.activityLog;
+          
+          // Truncate descriptions and remove comments for board view
+          if (raw.tasks) {
+            for (const taskId in raw.tasks) {
+              const task = raw.tasks[taskId];
+              if (task.description && task.description.length > 100) {
+                task.description = task.description.substring(0, 100) + "... [Truncated, use get_task_details]";
+              }
+              if (task.comments) {
+                task.commentsCount = task.comments.length;
+                delete task.comments;
+              }
+            }
+          }
+          
+          return { content: [{ type: "text", text: JSON.stringify(raw) }] };
+        } catch (error: any) {
+          return { isError: true, content: [{ type: "text", text: `Error: ${error?.message}` }] };
+        }
+      }
+
+      if (request.params.name === "get_task_details") {
+        const { projectId, taskId } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          if (!project.tasks || !project.tasks[taskId]) {
+            throw new Error(`Task ${taskId} not found`);
+          }
+          
+          const taskDetails = typeof project.tasks[taskId].toObject === 'function' 
+            ? project.tasks[taskId].toObject() 
+            : project.tasks[taskId];
+            
+          return { content: [{ type: "text", text: JSON.stringify(taskDetails) }] };
+        } catch (error: any) {
+          return { isError: true, content: [{ type: "text", text: `Error: ${error?.message}` }] };
+        }
       }
 
       if (request.params.name === "add_task") {
