@@ -49,6 +49,8 @@ export default function TaskCard({ task, index, columnId }) {
 
   const getPriorityLabel = (prio) => {
     switch (prio) {
+      case "critical":
+        return t('task.prio_critical');
       case "high":
         return t('task.prio_high');
       case "medium":

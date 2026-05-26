@@ -7,6 +7,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { ProjectsService } from "../projects/projects.service";
+import { marked } from "marked";
 
 @Injectable()
 export class McpService {
@@ -46,7 +47,7 @@ export class McpService {
                   type: "string",
                   description: "Task description",
                 },
-                priority: { type: "string", description: "Task priority (low, medium, high) (optional)" },
+                priority: { type: "string", description: "Task priority (low, medium, high, critical) (optional)" },
                 tags: { type: "array", items: { type: "string" }, description: "Array of tags (optional)" },
                 dueDate: { type: "string", description: "Due date in ISO format (optional)" },
                 subtasks: { 
@@ -75,7 +76,7 @@ export class McpService {
                 taskId: { type: "string", description: "The ID of the task to update" },
                 title: { type: "string", description: "New task title (optional)" },
                 description: { type: "string", description: "New task description (optional)" },
-                priority: { type: "string", description: "New task priority (low, medium, high) (optional)" },
+                priority: { type: "string", description: "New task priority (low, medium, high, critical) (optional)" },
                 tags: { type: "array", items: { type: "string" }, description: "New array of tags (optional)" },
                 dueDate: { type: "string", description: "New due date in ISO format (optional)" },
                 subtasks: { 
@@ -147,10 +148,11 @@ export class McpService {
           );
 
           const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+          const parsedDescription = description ? await marked.parse(description) : "";
           const newTask = {
             id: taskId,
             title,
-            description: description || "",
+            description: parsedDescription,
             priority: priority || "medium",
             tags: tags || [],
             subtasks: subtasks || [],
@@ -205,7 +207,9 @@ export class McpService {
           }
 
           if (title !== undefined) project.tasks[taskId].title = title;
-          if (description !== undefined) project.tasks[taskId].description = description;
+          if (description !== undefined) {
+             project.tasks[taskId].description = description ? await marked.parse(description) : "";
+          }
           if (priority !== undefined) project.tasks[taskId].priority = priority;
           if (tags !== undefined) project.tasks[taskId].tags = tags;
           if (dueDate !== undefined) project.tasks[taskId].dueDate = dueDate;

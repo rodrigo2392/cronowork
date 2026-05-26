@@ -1067,18 +1067,20 @@ export default function TaskModal() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gridTemplateColumns: "repeat(4, 1fr)",
                   gap: "10px",
                 }}
               >
-                {["low", "medium", "high"].map((prio) => {
+                {["low", "medium", "high", "critical"].map((prio) => {
                   const isActive = priority === prio;
                   const label =
                     prio === "low"
                       ? t("task.prio_low")
                       : prio === "medium"
                         ? t("task.prio_medium")
-                        : t("task.prio_high");
+                        : prio === "high"
+                          ? t("task.prio_high")
+                          : t("task.prio_critical");
 
                   let activeBorder = "var(--border-color)";
                   let activeBg = "transparent";
@@ -1089,9 +1091,12 @@ export default function TaskModal() {
                     } else if (prio === "medium") {
                       activeBorder = "var(--priority-medium)";
                       activeBg = "var(--priority-medium-bg)";
-                    } else {
+                    } else if (prio === "high") {
                       activeBorder = "var(--priority-high)";
                       activeBg = "var(--priority-high-bg)";
+                    } else {
+                      activeBorder = "var(--priority-critical)";
+                      activeBg = "var(--priority-critical-bg)";
                     }
                   }
 

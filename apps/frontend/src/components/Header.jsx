@@ -871,6 +871,7 @@ export default function Header() {
             <option value="low">{t("header.priority_low")}</option>
             <option value="medium">{t("header.priority_medium")}</option>
             <option value="high">{t("header.priority_high")}</option>
+            <option value="critical">{t("header.priority_critical")}</option>
           </select>
 
           {/* Tag Filter */}

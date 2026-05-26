@@ -25,6 +25,8 @@
   --priority-medium-bg: rgba(245, 158, 11, 0.08);
   --priority-high: #ef4444;
   --priority-high-bg: rgba(239, 68, 68, 0.08);
+  --priority-critical: #c026d3; /* Fuchsia/Purple for Critical */
+  --priority-critical-bg: rgba(192, 38, 211, 0.08);
   --completed-color: #10b981;
   --completed-bg: rgba(16, 185, 129, 0.08);
 
