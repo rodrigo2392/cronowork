@@ -16,8 +16,10 @@ export function SocketProvider({ children }) {
   useEffect(() => {
     if (token && user) {
       // Connect to Socket.IO using the base URL (stripping '/api' if present)
-      const baseUrl = API_URL.replace('/api', '');
+      // We explicitly set the path to /api/socket.io/ so it passes through the /api/ nginx block
+      const baseUrl = API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL.replace('/api', '');
       const newSocket = io(baseUrl, {
+        path: '/api/socket.io/',
         auth: {
           token
         }
