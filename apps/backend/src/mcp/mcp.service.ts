@@ -320,13 +320,16 @@ export class McpService {
 
   async handleSse(req: Request, res: Response) {
     this.logger.log("New MCP SSE connection establishing...");
-    let baseUrl = process.env.MCP_MESSAGES_ENDPOINT || "/api/mcp/messages";
-    
-    // Ensure baseUrl is an absolute URL
-    if (!baseUrl.startsWith("http")) {
-      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-      const host = req.headers.host || "cronowork.app";
-      baseUrl = `${protocol}://${host}${baseUrl.startsWith('/') ? '' : '/'}${baseUrl}`;
+
+    const appUrl = process.env.APP_URL;
+    let baseUrl: string;
+
+    if (appUrl) {
+      baseUrl = appUrl.replace(/\/+$/, '') + '/api/mcp/messages';
+    } else {
+      const proto = (req.headers['x-forwarded-proto'] as string)?.split(',')[0]?.trim() || req.protocol || 'https';
+      const host = (req.headers['x-forwarded-host'] as string) || req.headers.host || 'cronowork.app';
+      baseUrl = `${proto}://${host}/api/mcp/messages`;
     }
 
     const token = req.query.token as string;
