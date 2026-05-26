@@ -1,0 +1,40 @@
+diff --git a/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/sse.js b/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/sse.js
+index 8c8ad65..5dd7df0 100644
+--- a/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/sse.js
++++ b/node_modules/@modelcontextprotocol/sdk/dist/cjs/server/sse.js
+@@ -72,9 +72,12 @@ class SSEServerTransport {
+         const dummyBase = 'http://localhost'; // Any valid base works
+         const endpointUrl = new node_url_1.URL(this._endpoint, dummyBase);
+         endpointUrl.searchParams.set('sessionId', this._sessionId);
+-        // Reconstruct the relative URL string (pathname + search + hash)
+-        const relativeUrlWithSession = endpointUrl.pathname + endpointUrl.search + endpointUrl.hash;
+-        this.res.write(`event: endpoint\ndata: ${relativeUrlWithSession}\n\n`);
++        // Reconstruct the URL string
++        const isAbsolute = this._endpoint.startsWith('http://') || this._endpoint.startsWith('https://');
++        const finalUrlWithSession = isAbsolute 
++            ? endpointUrl.toString() 
++            : endpointUrl.pathname + endpointUrl.search + endpointUrl.hash;
++        this.res.write(`event: endpoint\ndata: ${finalUrlWithSession}\n\n`);
+         this._sseResponse = this.res;
+         this.res.on('close', () => {
+             this._sseResponse = undefined;
+diff --git a/node_modules/@modelcontextprotocol/sdk/dist/esm/server/sse.js b/node_modules/@modelcontextprotocol/sdk/dist/esm/server/sse.js
+index f0e0576..d6498ba 100644
+--- a/node_modules/@modelcontextprotocol/sdk/dist/esm/server/sse.js
++++ b/node_modules/@modelcontextprotocol/sdk/dist/esm/server/sse.js
+@@ -66,9 +66,12 @@ export class SSEServerTransport {
+         const dummyBase = 'http://localhost'; // Any valid base works
+         const endpointUrl = new URL(this._endpoint, dummyBase);
+         endpointUrl.searchParams.set('sessionId', this._sessionId);
+-        // Reconstruct the relative URL string (pathname + search + hash)
+-        const relativeUrlWithSession = endpointUrl.pathname + endpointUrl.search + endpointUrl.hash;
+-        this.res.write(`event: endpoint\ndata: ${relativeUrlWithSession}\n\n`);
++        // Reconstruct the URL string
++        const isAbsolute = this._endpoint.startsWith('http://') || this._endpoint.startsWith('https://');
++        const finalUrlWithSession = isAbsolute 
++            ? endpointUrl.toString() 
++            : endpointUrl.pathname + endpointUrl.search + endpointUrl.hash;
++        this.res.write(`event: endpoint\ndata: ${finalUrlWithSession}\n\n`);
+         this._sseResponse = this.res;
+         this.res.on('close', () => {
+             this._sseResponse = undefined;
