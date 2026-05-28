@@ -221,6 +221,44 @@ export default function TaskModal() {
   const activeProj = projects.find(p => p.id === activeProjectId);
   const liveTask = editingTask ? (activeProj?.tasks[editingTask.id] || editingTask) : null;
 
+  const projectMembers = React.useMemo(() => {
+    if (!activeProj) return [];
+
+    const membersList = [];
+
+    // 1. Add owner
+    const owner = allUsers.find(u => u._id === activeProj.userId);
+    if (owner) {
+      membersList.push({ email: owner.email, name: owner.name, _id: owner._id });
+    } else if (activeProj.userId === user?.id) {
+      membersList.push({ email: user.email, name: user.name, _id: user.id });
+    }
+
+    // 2. Add other members
+    if (activeProj.members) {
+      activeProj.members.forEach(email => {
+        const foundUser = allUsers.find(u => u.email === email);
+        if (foundUser) {
+          membersList.push({ email: foundUser.email, name: foundUser.name, _id: foundUser._id });
+        } else {
+          membersList.push({ email, name: email.split('@')[0] });
+        }
+      });
+    }
+
+    // Deduplicate by email
+    const unique = [];
+    const seen = new Set();
+    membersList.forEach(m => {
+      if (m.email && !seen.has(m.email)) {
+        seen.add(m.email);
+        unique.push(m);
+      }
+    });
+
+    return unique;
+  }, [activeProj, allUsers, user]);
+
   const handleAddManualTime = () => {
     const h = parseInt(manualHours) || 0;
     const m = parseInt(manualMinutes) || 0;
@@ -571,7 +609,7 @@ export default function TaskModal() {
     
     if (mentions.length > 0) {
       const uniqueMentions = [...new Set(mentions)];
-      const searchPool = allUsers && allUsers.length > 0 ? allUsers : [user, ...(activeProj?.members || []).map(m => ({ email: m }))];
+      const searchPool = projectMembers;
       
       uniqueMentions.forEach(mentionStr => {
         const targetUser = searchPool.find(u => {
@@ -634,7 +672,7 @@ export default function TaskModal() {
 
   const renderMentionsList = (setContent) => {
     if (!mentionState.active) return null;
-    const searchPool = allUsers && allUsers.length > 0 ? allUsers : [user, ...(activeProj?.members || []).map(m => ({ email: m }))];
+    const searchPool = projectMembers;
     
     // Remove duplicates by email
     const uniqueUsers = [];
@@ -710,7 +748,7 @@ export default function TaskModal() {
 
   const formatCommentContent = (htmlContent) => {
     let formatted = htmlContent;
-    const searchPool = allUsers && allUsers.length > 0 ? allUsers : [user, ...(activeProj?.members || []).map(m => ({ email: m }))];
+    const searchPool = projectMembers;
     
     // Sort users by name length descending to avoid partial matches (e.g. matching "Juan" inside "Juanita")
     const sortedPool = [...searchPool].sort((a, b) => {
@@ -1367,19 +1405,11 @@ export default function TaskModal() {
                   }}
                 >
                   <option value="">{t("task.unassigned") || "Sin asignar"}</option>
-                  {allUsers && allUsers.length > 0 
-                    ? allUsers.map(u => (
-                        <option key={u.email} value={u.email}>
-                          {u.email} {u.name ? `(${u.name})` : ''}
-                        </option>
-                      ))
-                    : Array.from(new Set([
-                        ...(user?.email ? [user.email] : []), 
-                        ...(activeProj?.members || [])
-                      ])).map(email => (
-                        <option key={email} value={email}>{email}</option>
-                      ))
-                  }
+                  {projectMembers.map(u => (
+                    <option key={u.email} value={u.email}>
+                      {u.email} {u.name ? `(${u.name})` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
               {/* Due Date */}
