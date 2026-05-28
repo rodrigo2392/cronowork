@@ -53,7 +53,24 @@ export default function TaskModal() {
   const [replyContent, setReplyContent] = useState("");
   const [assignee, setAssignee] = useState("");
   const [mentionState, setMentionState] = useState({ active: false, search: "", target: null });
-  
+
+  // Custom assignee dropdown. The native <select> popup rendered misplaced
+  // inside the modal, so we render our own fixed-positioned list instead.
+  const [assigneeMenuOpen, setAssigneeMenuOpen] = useState(false);
+  const [assigneeMenuRect, setAssigneeMenuRect] = useState(null);
+  const assigneeBtnRef = React.useRef(null);
+
+  useEffect(() => {
+    if (!assigneeMenuOpen) return;
+    const close = () => setAssigneeMenuOpen(false);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [assigneeMenuOpen]);
+
   const quillNewRef = React.useRef(null);
   const quillReplyRef = React.useRef(null);
   
@@ -1011,6 +1028,42 @@ export default function TaskModal() {
     if (editingTask) handleQuickSave("subtasks", newSubtasks);
   };
 
+  const openAssigneeMenu = () => {
+    const el = assigneeBtnRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const menuMax = 240;
+    const spaceBelow = window.innerHeight - r.bottom;
+    const openUp = spaceBelow < menuMax && r.top > spaceBelow;
+    setAssigneeMenuRect({
+      left: r.left,
+      width: r.width,
+      top: openUp ? undefined : r.bottom + 4,
+      bottom: openUp ? window.innerHeight - r.top + 4 : undefined,
+    });
+    setAssigneeMenuOpen(true);
+  };
+
+  const assigneeOptionLabel = (u) =>
+    u.email ? `${u.email}${u.name ? ` (${u.name})` : ""}` : (t("task.unassigned") || "Sin asignar");
+
+  const currentAssigneeLabel = () => {
+    if (!assignee) return t("task.unassigned") || "Sin asignar";
+    const u = projectMembers.find((m) => m.email === assignee);
+    return u ? assigneeOptionLabel(u) : assignee;
+  };
+
+  const handleSelectAssignee = (val) => {
+    setAssigneeMenuOpen(false);
+    if (val !== assignee) {
+      setAssignee(val);
+      if (editingTask) {
+        handleQuickSave("assignee", val);
+        notifyAssignee(val, title);
+      }
+    }
+  };
+
   return (
     <AnimatePresence>
       <div
@@ -1042,12 +1095,14 @@ export default function TaskModal() {
           }}
         />
 
-        {/* Modal Content */}
+        {/* Modal Content.
+            Animate opacity only — a transform on this (the select's ancestor)
+            misplaces the native <select> popup in Chromium. */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
           className="modal-content"
           style={{
             position: "relative",
@@ -1388,34 +1443,95 @@ export default function TaskModal() {
                 <label style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 500 }}>
                   {t("modal.task.assignee") || "Responsable"}
                 </label>
-                <select
-                  value={assignee}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setAssignee(val);
-                    if (editingTask && val !== assignee) {
-                      handleQuickSave("assignee", val);
-                      notifyAssignee(val, title);
-                    }
-                  }}
+                <button
+                  type="button"
+                  ref={assigneeBtnRef}
+                  onClick={() => (assigneeMenuOpen ? setAssigneeMenuOpen(false) : openAssigneeMenu())}
                   style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                    width: "100%",
                     padding: "9px 12px",
                     borderRadius: "var(--radius-md)",
                     border: "1px solid var(--border-color)",
                     backgroundColor: "var(--bg-tertiary)",
-                    color: "var(--text-primary)",
+                    color: assignee ? "var(--text-primary)" : "var(--text-muted)",
                     fontFamily: "var(--font-sans)",
                     fontSize: "0.85rem",
                     outline: "none",
+                    cursor: "pointer",
+                    textAlign: "left",
                   }}
                 >
-                  <option value="">{t("task.unassigned") || "Sin asignar"}</option>
-                  {projectMembers.map(u => (
-                    <option key={u.email} value={u.email}>
-                      {u.email} {u.name ? `(${u.name})` : ''}
-                    </option>
-                  ))}
-                </select>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {currentAssigneeLabel()}
+                  </span>
+                  <Icons.ChevronDown size={16} style={{ flexShrink: 0, color: "var(--text-muted)" }} />
+                </button>
+
+                {assigneeMenuOpen && assigneeMenuRect && (
+                  <>
+                    <div
+                      onClick={() => setAssigneeMenuOpen(false)}
+                      style={{ position: "fixed", inset: 0, zIndex: 199 }}
+                    />
+                    <div
+                      style={{
+                        position: "fixed",
+                        left: assigneeMenuRect.left,
+                        top: assigneeMenuRect.top,
+                        bottom: assigneeMenuRect.bottom,
+                        width: assigneeMenuRect.width,
+                        maxHeight: "240px",
+                        overflowY: "auto",
+                        backgroundColor: "var(--bg-secondary)",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: "var(--radius-md)",
+                        boxShadow: "var(--shadow-lg)",
+                        zIndex: 200,
+                        padding: "6px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "2px",
+                      }}
+                    >
+                      {[{ email: "", name: "" }, ...projectMembers].map((u) => {
+                        const isActive = u.email === assignee;
+                        return (
+                          <button
+                            key={u.email || "__none__"}
+                            type="button"
+                            onClick={() => handleSelectAssignee(u.email)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "8px",
+                              width: "100%",
+                              padding: "9px 10px",
+                              background: isActive ? "var(--bg-tertiary)" : "transparent",
+                              border: "none",
+                              borderRadius: "var(--radius-sm)",
+                              color: u.email ? "var(--text-primary)" : "var(--text-muted)",
+                              fontSize: "0.85rem",
+                              cursor: "pointer",
+                              textAlign: "left",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--bg-hover)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isActive ? "var(--bg-tertiary)" : "transparent")}
+                          >
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {assigneeOptionLabel(u)}
+                            </span>
+                            {isActive && <Icons.Check size={15} style={{ flexShrink: 0, color: "var(--accent-color)" }} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
               {/* Due Date */}
               <div

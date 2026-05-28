@@ -104,7 +104,6 @@ export default function Onboarding() {
         display: "flex",
         alignItems: isMobile ? "stretch" : "flex-start",
         justifyContent: "center",
-        minHeight: "100vh",
         minHeight: "100dvh",
         width: "100vw",
         backgroundColor: "var(--bg-primary)",

@@ -32,6 +32,9 @@ export default function Sidebar() {
   const handleNewProject = () => {
     setEditingProject(null);
     setIsProjectModalOpen(true);
+    if (isMobile) {
+      setIsSidebarCollapsed(true);
+    }
   };
 
   return (

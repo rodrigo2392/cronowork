@@ -294,52 +294,32 @@ export default function Header() {
       <div
         style={{
           display: "flex",
+          flexDirection: isMobile ? "column" : "row",
           justifyContent: "space-between",
-          alignItems: "flex-start",
-          flexWrap: "wrap",
+          alignItems: isMobile ? "stretch" : "flex-start",
+          flexWrap: isMobile ? "nowrap" : "wrap",
           gap: "16px",
         }}
       >
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            {isMobile && (
-              <button
-                onClick={() => setIsSidebarCollapsed(false)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "var(--text-primary)",
-                  cursor: "pointer",
-                  padding: "8px",
-                  borderRadius: "6px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "all var(--transition-fast)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                }}
-                title={t("header.menu") || "Menú"}
-              >
-                <Icons.Menu size={20} />
-              </button>
-            )}
+        <div style={{ order: isMobile ? 2 : 0, minWidth: 0, maxWidth: "100%" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap", minWidth: 0 }}>
             <h1
               style={{
                 fontSize: "1.5rem",
                 fontWeight: 600,
                 letterSpacing: "-0.3px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                minWidth: 0,
               }}
+              title={activeProject.name}
             >
               {activeProject.name}
             </h1>
             {isMobile ? (
               /* Mobile: dropdown menu for project actions */
-              <div style={{ position: "relative" }}>
+              <div style={{ position: "relative", flexShrink: 0 }}>
                 <button
                   onClick={() => setShowProjectMenu(!showProjectMenu)}
                   style={{
@@ -374,7 +354,7 @@ export default function Header() {
                       style={{
                         position: "absolute",
                         top: "100%",
-                        right: 0,
+                        left: 0,
                         marginTop: "4px",
                         backgroundColor: "var(--bg-secondary)",
                         border: "1px solid var(--border-color)",
@@ -382,6 +362,7 @@ export default function Header() {
                         boxShadow: "var(--shadow-lg)",
                         zIndex: 50,
                         minWidth: "200px",
+                        maxWidth: "calc(100vw - 32px)",
                         padding: "6px",
                         display: "flex",
                         flexDirection: "column",
@@ -569,9 +550,31 @@ export default function Header() {
           </p>
         </div>
 
-        {/* Global actions (Tracker, Share & Avatar) */}
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", position: "relative", flexWrap: "wrap" }}>
-          
+        {/* Global actions (Tracker, Share & Avatar). On mobile this is the top app bar. */}
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "8px" : "16px", position: "relative", flexWrap: "wrap", order: isMobile ? 1 : 0, width: isMobile ? "100%" : "auto" }}>
+
+          {isMobile && (
+            <button
+              onClick={() => setIsSidebarCollapsed(false)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "var(--text-primary)",
+                cursor: "pointer",
+                padding: "8px",
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: "auto",
+                transition: "all var(--transition-fast)",
+              }}
+              title={t("header.menu") || "Menú"}
+            >
+              <Icons.Menu size={22} />
+            </button>
+          )}
+
           {activeTracker && (
             <div style={{ 
               display: 'flex', alignItems: 'center', gap: '8px', 
@@ -606,7 +609,7 @@ export default function Header() {
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              padding: "10px 16px",
+              padding: isMobile ? "10px" : "10px 16px",
               backgroundColor: "rgba(99, 102, 241, 0.1)",
               border: "1px solid rgba(99, 102, 241, 0.2)",
               borderRadius: "var(--radius-md)",
@@ -626,7 +629,7 @@ export default function Header() {
             }}
           >
             <Icons.Share2 size={18} />
-            <span>{t("header.share") || "Compartir"}</span>
+            {!isMobile && <span>{t("header.share") || "Compartir"}</span>}
           </button>
 
           {/* Avatar Dropdown */}
