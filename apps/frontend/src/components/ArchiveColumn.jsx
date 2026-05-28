@@ -9,14 +9,14 @@ export default function ArchiveColumn() {
   return (
     <div
       style={{
-        width: '300px',
+        width: 'var(--column-width)',
         maxHeight: '100%',
         display: 'flex',
         flexDirection: 'column',
         borderRadius: 'var(--radius-lg)',
         backgroundColor: 'var(--bg-primary)',
         border: '1px dashed var(--border-color)',
-        marginRight: '24px',
+        marginRight: 'var(--column-margin)',
         opacity: 0.8,
         transition: 'opacity 0.2s, border-color 0.2s',
       }}

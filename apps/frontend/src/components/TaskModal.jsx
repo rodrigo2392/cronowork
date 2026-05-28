@@ -1012,6 +1012,7 @@ export default function TaskModal() {
   return (
     <AnimatePresence>
       <div
+        className="modal-overlay"
         style={{
           position: "fixed",
           top: 0,
@@ -1045,6 +1046,7 @@ export default function TaskModal() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="modal-content"
           style={{
             position: "relative",
             width: "90%",

@@ -36,11 +36,25 @@ export default function Header() {
     setViewingUserProfile,
     setIsProfileModalOpen,
     setIsProjectSettingsModalOpen,
-    setIsMcpModalOpen
+    setIsMcpModalOpen,
+    isSidebarCollapsed,
+    setIsSidebarCollapsed
   } = useBoard();
 
   const [newColTitle, setNewColTitle] = useState("");
   const [showAddCol, setShowAddCol] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const { theme, toggleTheme } = useTheme();
   const { t, locale, toggleLanguage } = useTranslation();
   const { confirm } = useConfirm();
@@ -267,7 +281,7 @@ export default function Header() {
         height: "auto",
         minHeight: "var(--header-height)",
         borderBottom: "1px solid var(--border-color)",
-        padding: "16px 24px",
+        padding: isMobile ? "12px 16px" : "16px 24px",
         display: "flex",
         flexDirection: "column",
         gap: "16px",
@@ -286,7 +300,33 @@ export default function Header() {
         }}
       >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            {isMobile && (
+              <button
+                onClick={() => setIsSidebarCollapsed(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-primary)",
+                  cursor: "pointer",
+                  padding: "8px",
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all var(--transition-fast)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+                title={t("header.menu") || "Menú"}
+              >
+                <Icons.Menu size={20} />
+              </button>
+            )}
             <h1
               style={{
                 fontSize: "1.5rem",
@@ -434,7 +474,7 @@ export default function Header() {
         </div>
 
         {/* Global actions (Tracker, Share & Avatar) */}
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", position: "relative", flexWrap: "wrap" }}>
           
           {activeTracker && (
             <div style={{ 
@@ -628,150 +668,150 @@ export default function Header() {
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-            style={{
-              width: "42px",
-              height: "42px",
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, var(--accent-color), var(--accent-hover))",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 600,
-              fontSize: "1.05rem",
-              border: "none",
-              cursor: "pointer",
-              boxShadow: "0 2px 10px rgba(99, 102, 241, 0.3)",
-              transition: "transform 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-            title="Opciones"
-          >
-            {userInitial}
-          </button>
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, var(--accent-color), var(--accent-hover))",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 600,
+                fontSize: "1.05rem",
+                border: "none",
+                cursor: "pointer",
+                boxShadow: "0 2px 10px rgba(99, 102, 241, 0.3)",
+                transition: "transform 0.2s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+              title="Opciones"
+            >
+              {userInitial}
+            </button>
 
-          <AnimatePresence>
-            {isMenuOpen && (
-              <>
-                <div
-                  style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", zIndex: 9 }}
-                  onClick={() => setIsMenuOpen(false)}
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  style={{
-                    position: "absolute",
-                    top: "48px",
-                    right: 0,
-                    width: "220px",
-                    backgroundColor: "var(--bg-secondary)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "var(--radius-lg)",
-                    boxShadow: "var(--shadow-lg)",
-                    padding: "8px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "4px",
-                    zIndex: 10,
-                  }}
-                >
-                  <div style={{ padding: "8px 12px", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", marginBottom: "4px" }}>
-                    <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>{t('header.logged_in_as') || 'Logueado como'}</p>
-                    <p style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-primary)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {user?.name || t('header.user') || 'Usuario'}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => { 
-                      setIsProfileModalOpen(true);
-                      setIsMenuOpen(false); 
-                    }}
+            <AnimatePresence>
+              {isMenuOpen && (
+                <>
+                  <div
+                    style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", zIndex: 9 }}
+                    onClick={() => setIsMenuOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
                     style={{
-                      display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
-                      width: "100%", background: "none", border: "none", borderRadius: "var(--radius-md)",
-                      color: "var(--text-primary)", fontSize: "0.9rem", cursor: "pointer", textAlign: "left",
-                      transition: "background-color 0.15s"
+                      position: "absolute",
+                      top: "48px",
+                      right: 0,
+                      width: "220px",
+                      backgroundColor: "var(--bg-secondary)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "var(--radius-lg)",
+                      boxShadow: "var(--shadow-lg)",
+                      padding: "8px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      zIndex: 10,
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
                   >
-                    <Icons.User size={18} style={{ color: "var(--text-muted)" }}/>
-                    <span>{t("header.profile") || "Mi Perfil"}</span>
-                  </button>
+                    <div style={{ padding: "8px 12px", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", marginBottom: "4px" }}>
+                      <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>{t('header.logged_in_as') || 'Logueado como'}</p>
+                      <p style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-primary)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {user?.name || t('header.user') || 'Usuario'}
+                      </p>
+                    </div>
 
-                  <button
-                    onClick={() => { 
-                      if (user?.email) setViewingUserProfile(user.email);
-                      setIsMenuOpen(false); 
-                    }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
-                      width: "100%", background: "none", border: "none", borderRadius: "var(--radius-md)",
-                      color: "var(--text-primary)", fontSize: "0.9rem", cursor: "pointer", textAlign: "left",
-                      transition: "background-color 0.15s"
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                  >
-                    <Icons.Activity size={18} style={{ color: "var(--text-muted)" }}/>
-                    <span>Mi Actividad</span>
-                  </button>
+                    <button
+                      onClick={() => { 
+                        setIsProfileModalOpen(true);
+                        setIsMenuOpen(false); 
+                      }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
+                        width: "100%", background: "none", border: "none", borderRadius: "var(--radius-md)",
+                        color: "var(--text-primary)", fontSize: "0.9rem", cursor: "pointer", textAlign: "left",
+                        transition: "background-color 0.15s"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                    >
+                      <Icons.User size={18} style={{ color: "var(--text-muted)" }}/>
+                      <span>{t("header.profile") || "Mi Perfil"}</span>
+                    </button>
 
-                  <button
-                    onClick={() => { toggleLanguage(); setIsMenuOpen(false); }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
-                      width: "100%", background: "none", border: "none", borderRadius: "var(--radius-md)",
-                      color: "var(--text-primary)", fontSize: "0.9rem", cursor: "pointer", textAlign: "left",
-                      transition: "background-color 0.15s"
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                  >
-                    <Icons.Globe size={18} style={{ color: "var(--text-muted)" }}/>
-                    <span>{locale.toUpperCase()} {t('header.change') ? `(${t('header.change')})` : '(Cambiar)'}</span>
-                  </button>
+                    <button
+                      onClick={() => { 
+                        if (user?.email) setViewingUserProfile(user.email);
+                        setIsMenuOpen(false); 
+                      }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
+                        width: "100%", background: "none", border: "none", borderRadius: "var(--radius-md)",
+                        color: "var(--text-primary)", fontSize: "0.9rem", cursor: "pointer", textAlign: "left",
+                        transition: "background-color 0.15s"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                    >
+                      <Icons.Activity size={18} style={{ color: "var(--text-muted)" }}/>
+                      <span>Mi Actividad</span>
+                    </button>
 
-                  <button
-                    onClick={() => { toggleTheme(); setIsMenuOpen(false); }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
-                      width: "100%", background: "none", border: "none", borderRadius: "var(--radius-md)",
-                      color: "var(--text-primary)", fontSize: "0.9rem", cursor: "pointer", textAlign: "left",
-                      transition: "background-color 0.15s"
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                  >
-                    {theme === "dark" ? <Icons.Sun size={18} style={{ color: "var(--text-muted)" }}/> : <Icons.Moon size={18} style={{ color: "var(--text-muted)" }}/>}
-                    <span>{theme === "dark" ? t("header.light_mode") : t("header.dark_mode")}</span>
-                  </button>
+                    <button
+                      onClick={() => { toggleLanguage(); setIsMenuOpen(false); }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
+                        width: "100%", background: "none", border: "none", borderRadius: "var(--radius-md)",
+                        color: "var(--text-primary)", fontSize: "0.9rem", cursor: "pointer", textAlign: "left",
+                        transition: "background-color 0.15s"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                    >
+                      <Icons.Globe size={18} style={{ color: "var(--text-muted)" }}/>
+                      <span>{locale.toUpperCase()} {t('header.change') ? `(${t('header.change')})` : '(Cambiar)'}</span>
+                    </button>
 
-                  <button
-                    onClick={() => { handleLogout(); setIsMenuOpen(false); }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
-                      width: "100%", background: "none", border: "none", borderRadius: "var(--radius-md)",
-                      color: "var(--priority-high)", fontSize: "0.9rem", cursor: "pointer", textAlign: "left",
-                      marginTop: "4px", borderTop: "1px solid rgba(255, 255, 255, 0.05)",
-                      transition: "background-color 0.15s"
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.1)"}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-                  >
-                    <Icons.LogOut size={18} />
-                    <span>{t("header.logout") || "Cerrar sesión"}</span>
-                  </button>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
+                    <button
+                      onClick={() => { toggleTheme(); setIsMenuOpen(false); }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
+                        width: "100%", background: "none", border: "none", borderRadius: "var(--radius-md)",
+                        color: "var(--text-primary)", fontSize: "0.9rem", cursor: "pointer", textAlign: "left",
+                        transition: "background-color 0.15s"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                    >
+                      {theme === "dark" ? <Icons.Sun size={18} style={{ color: "var(--text-muted)" }}/> : <Icons.Moon size={18} style={{ color: "var(--text-muted)" }}/>}
+                      <span>{theme === "dark" ? t("header.light_mode") : t("header.dark_mode")}</span>
+                    </button>
+
+                    <button
+                      onClick={() => { handleLogout(); setIsMenuOpen(false); }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px",
+                        width: "100%", background: "none", border: "none", borderRadius: "var(--radius-md)",
+                        color: "var(--priority-high)", fontSize: "0.9rem", cursor: "pointer", textAlign: "left",
+                        marginTop: "4px", borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+                        transition: "background-color 0.15s"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.1)"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                    >
+                      <Icons.LogOut size={18} />
+                      <span>{t("header.logout") || "Cerrar sesión"}</span>
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -779,306 +819,341 @@ export default function Header() {
       <div
         style={{
           display: "flex",
+          flexDirection: isMobile ? "column" : "row",
           justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "16px",
+          alignItems: isMobile ? "stretch" : "center",
+          gap: "12px",
           borderTop: "1px solid rgba(255, 255, 255, 0.03)",
           paddingTop: "12px",
+          width: "100%",
         }}
       >
-        {/* Left Sub-Section: Progress bar & Search */}
+        {/* Progress bar container (always visible) */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "24px",
-            flex: 1,
-            flexWrap: "wrap",
+            gap: "12px",
+            minWidth: isMobile ? "100%" : "200px",
+            maxWidth: isMobile ? "none" : "300px",
           }}
         >
+          <span
+            style={{
+              fontSize: "0.8rem",
+              color: "var(--text-secondary)",
+              fontWeight: 500,
+            }}
+          >
+            {t("header.progress")}
+          </span>
           <div
+            style={{
+              flex: 1,
+              height: "6px",
+              backgroundColor: "var(--border-color)",
+              borderRadius: "9999px",
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <div
+              style={{
+                width: `${progress}%`,
+                height: "100%",
+                background:
+                  progress === 100
+                    ? "var(--completed-color)"
+                    : "linear-gradient(90deg, var(--accent-color), var(--accent-hover))",
+                borderRadius: "9999px",
+                transition: "width 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
+              }}
+            />
+          </div>
+          <span
+            style={{
+              fontSize: "0.8rem",
+              color:
+                progress === 100
+                  ? "var(--completed-color)"
+                  : "var(--text-primary)",
+              fontWeight: 600,
+            }}
+          >
+            {progress}%
+          </span>
+        </div>
+
+        {/* Mobile Toggle Filters Button */}
+        {isMobile && (
+          <button
+            onClick={() => setShowFiltersMobile(!showFiltersMobile)}
             style={{
               display: "flex",
               alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              padding: "10px",
+              backgroundColor: "var(--bg-secondary)",
+              border: "1px solid var(--border-color)",
+              borderRadius: "var(--radius-md)",
+              color: "var(--text-primary)",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              cursor: "pointer",
+              width: "100%",
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            {showFiltersMobile ? <Icons.ChevronUp size={16} /> : <Icons.SlidersHorizontal size={16} />}
+            <span>{showFiltersMobile ? "Ocultar Filtros" : "Mostrar Filtros y Búsqueda"}</span>
+          </button>
+        )}
+
+        {/* Search & Filters (collapsible on mobile, always visible on desktop) */}
+        {(!isMobile || showFiltersMobile) && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              alignItems: isMobile ? "stretch" : "center",
               gap: "12px",
-              minWidth: "200px",
-              maxWidth: "300px",
               flex: 1,
+              width: "100%",
+              justifyContent: isMobile ? "flex-start" : "flex-end",
             }}
           >
-            <span
-              style={{
-                fontSize: "0.8rem",
-                color: "var(--text-secondary)",
-                fontWeight: 500,
-              }}
-            >
-              {t("header.progress")}
-            </span>
-            <div
-              style={{
-                flex: 1,
-                height: "6px",
-                backgroundColor: "var(--border-color)",
-                borderRadius: "9999px",
-                overflow: "hidden",
-                position: "relative",
-              }}
-            >
-              <div
+            {/* Search Bar */}
+            <div style={{ position: "relative", width: "100%", maxWidth: isMobile ? "none" : "300px" }}>
+              <span
                 style={{
-                  width: `${progress}%`,
-                  height: "100%",
-                  background:
-                    progress === 100
-                      ? "var(--completed-color)"
-                      : "linear-gradient(90deg, var(--accent-color), var(--accent-hover))",
-                  borderRadius: "9999px",
-                  transition: "width 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
+                  position: "absolute",
+                  left: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
                 }}
-              />
-            </div>
-            <span
-              style={{
-                fontSize: "0.8rem",
-                color:
-                  progress === 100
-                    ? "var(--completed-color)"
-                    : "var(--text-primary)",
-                fontWeight: 600,
-              }}
-            >
-              {progress}%
-            </span>
-          </div>
-
-          {/* Search Bar */}
-          <div style={{ position: "relative", minWidth: "200px", flex: 1, maxWidth: "350px" }}>
-            <span
-              style={{
-                position: "absolute",
-                left: "10px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "var(--text-muted)",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <Icons.Search size={14} />
-            </span>
-            <input
-              type="text"
-              placeholder={t("header.search")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "7px 10px 7px 32px",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--border-color)",
-                backgroundColor: "var(--bg-secondary)",
-                color: "var(--text-primary)",
-                fontFamily: "var(--font-sans)",
-                fontSize: "0.85rem",
-                outline: "none",
-                transition: "border-color var(--transition-fast)",
-              }}
-              onFocus={(e) =>
-                (e.target.style.borderColor = "var(--accent-color)")
-              }
-              onBlur={(e) =>
-                (e.target.style.borderColor = "var(--border-color)")
-              }
-            />
-          </div>
-        </div>
-
-        {/* Right Sub-Section: Filters */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            flexWrap: "wrap",
-            justifyContent: "flex-end",
-          }}
-        >
-
-          {/* Priority Filter */}
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            style={{
-              padding: "7px 10px",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border-color)",
-              backgroundColor: "var(--bg-secondary)",
-              color: "var(--text-primary)",
-              fontFamily: "var(--font-sans)",
-              fontSize: "0.85rem",
-              outline: "none",
-              cursor: "pointer",
-            }}
-          >
-            <option value="all">{t("header.priority_all")}</option>
-            <option value="low">{t("header.priority_low")}</option>
-            <option value="medium">{t("header.priority_medium")}</option>
-            <option value="high">{t("header.priority_high")}</option>
-            <option value="critical">{t("header.priority_critical")}</option>
-          </select>
-
-          {/* Tag Filter */}
-          <select
-            value={filterTag}
-            onChange={(e) => setFilterTag(e.target.value)}
-            style={{
-              padding: "7px 10px",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border-color)",
-              backgroundColor: "var(--bg-secondary)",
-              color: "var(--text-primary)",
-              fontFamily: "var(--font-sans)",
-              fontSize: "0.85rem",
-              outline: "none",
-              cursor: "pointer",
-              maxWidth: "150px",
-            }}
-          >
-            <option value="all">{t("header.tag_all")}</option>
-            {allTags.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </select>
-
-          {/* AI Task Generator Button */}
-          {aiConfigured && (
-            <button
-              onClick={() => setIsAiModalOpen(true)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "10px 16px",
-                background: "linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))",
-                border: "1px solid rgba(168, 85, 247, 0.3)",
-                borderRadius: "var(--radius-md)",
-                color: "#a855f7",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all var(--transition-fast)",
-                boxShadow: "0 0 10px rgba(168, 85, 247, 0.1) inset"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "linear-gradient(135deg, var(--accent-color), #a855f7)";
-                e.currentTarget.style.color = "#ffffff";
-                e.currentTarget.style.boxShadow = "0 4px 12px rgba(168, 85, 247, 0.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))";
-                e.currentTarget.style.color = "#a855f7";
-                e.currentTarget.style.boxShadow = "0 0 10px rgba(168, 85, 247, 0.1) inset";
-              }}
-              title="Generar tareas con IA"
-            >
-              <Icons.Sparkles size={18} />
-              <span>{t("header.ai_btn") || "Generar Tareas"}</span>
-            </button>
-          )}
-
-          {/* Add Column Button */}
-          {showAddCol ? (
-            <form
-              onSubmit={handleAddColumnSubmit}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                animation: "fadeIn var(--transition-fast)",
-              }}
-            >
+              >
+                <Icons.Search size={14} />
+              </span>
               <input
                 type="text"
-                autoFocus
-                placeholder={t("header.add_col_placeholder")}
-                value={newColTitle}
-                onChange={(e) => setNewColTitle(e.target.value)}
+                placeholder={t("header.search")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
-                  padding: "7px 10px",
+                  width: "100%",
+                  padding: "7px 10px 7px 32px",
                   borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--accent-color)",
+                  border: "1px solid var(--border-color)",
                   backgroundColor: "var(--bg-secondary)",
                   color: "var(--text-primary)",
                   fontFamily: "var(--font-sans)",
                   fontSize: "0.85rem",
                   outline: "none",
+                  transition: "border-color var(--transition-fast)",
                 }}
+                onFocus={(e) =>
+                  (e.target.style.borderColor = "var(--accent-color)")
+                }
+                onBlur={(e) =>
+                  (e.target.style.borderColor = "var(--border-color)")
+                }
               />
-              <button
-                type="submit"
-                style={{
-                  padding: "7px 10px",
-                  borderRadius: "var(--radius-md)",
-                  border: "none",
-                  backgroundColor: "var(--accent-color)",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontSize: "0.85rem",
-                  fontWeight: 500,
-                }}
-              >
-                {t("header.add_col_submit")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddCol(false)}
-                style={{
-                  padding: "7px",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--border-color)",
-                  backgroundColor: "transparent",
-                  color: "var(--text-muted)",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <Icons.X size={14} />
-              </button>
-            </form>
-          ) : (
-            <button
-              onClick={() => setShowAddCol(true)}
+            </div>
+
+            {/* Filters Row */}
+            <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "10px 16px",
-                backgroundColor: "var(--accent-color)",
-                border: "none",
-                borderRadius: "var(--radius-md)",
-                color: "#ffffff",
-                fontSize: "0.95rem",
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "background-color var(--transition-fast)",
+                flexDirection: isMobile ? "column" : "row",
+                alignItems: isMobile ? "stretch" : "center",
+                gap: "10px",
+                width: isMobile ? "100%" : "auto",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--accent-hover)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--accent-color)")
-              }
             >
-              <Icons.Plus size={18} />
-              <span>{t("header.add_col_btn")}</span>
-            </button>
-          )}
-        </div>
+              {/* Priority Filter */}
+              <select
+                value={filterPriority}
+                onChange={(e) => setFilterPriority(e.target.value)}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "0.85rem",
+                  outline: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="all">{t("header.priority_all")}</option>
+                <option value="low">{t("header.priority_low")}</option>
+                <option value="medium">{t("header.priority_medium")}</option>
+                <option value="high">{t("header.priority_high")}</option>
+                <option value="critical">{t("header.priority_critical")}</option>
+              </select>
+
+              {/* Tag Filter */}
+              <select
+                value={filterTag}
+                onChange={(e) => setFilterTag(e.target.value)}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: "var(--bg-secondary)",
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "0.85rem",
+                  outline: "none",
+                  cursor: "pointer",
+                  maxWidth: isMobile ? "none" : "150px",
+                }}
+              >
+                <option value="all">{t("header.tag_all")}</option>
+                {allTags.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+
+              {/* AI Task Generator Button */}
+              {aiConfigured && (
+                <button
+                  onClick={() => setIsAiModalOpen(true)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    padding: "10px 16px",
+                    background: "linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))",
+                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    borderRadius: "var(--radius-md)",
+                    color: "#a855f7",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all var(--transition-fast)",
+                    boxShadow: "0 0 10px rgba(168, 85, 247, 0.1) inset"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "linear-gradient(135deg, var(--accent-color), #a855f7)";
+                    e.currentTarget.style.color = "#ffffff";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(168, 85, 247, 0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))";
+                    e.currentTarget.style.color = "#a855f7";
+                    e.currentTarget.style.boxShadow = "0 0 10px rgba(168, 85, 247, 0.1) inset";
+                  }}
+                  title="Generar tareas con IA"
+                >
+                  <Icons.Sparkles size={18} />
+                  <span>{t("header.ai_btn") || "Generar Tareas"}</span>
+                </button>
+              )}
+
+              {/* Add Column Button */}
+              {showAddCol ? (
+                <form
+                  onSubmit={handleAddColumnSubmit}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    animation: "fadeIn var(--transition-fast)",
+                    width: isMobile ? "100%" : "auto",
+                  }}
+                >
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder={t("header.add_col_placeholder")}
+                    value={newColTitle}
+                    onChange={(e) => setNewColTitle(e.target.value)}
+                    style={{
+                      padding: "7px 10px",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid var(--accent-color)",
+                      backgroundColor: "var(--bg-secondary)",
+                      color: "var(--text-primary)",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "0.85rem",
+                      outline: "none",
+                      flex: isMobile ? 1 : "initial",
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    style={{
+                      padding: "7px 10px",
+                      borderRadius: "var(--radius-md)",
+                      border: "none",
+                      backgroundColor: "var(--accent-color)",
+                      color: "#fff",
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {t("header.add_col_submit")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddCol(false)}
+                    style={{
+                      padding: "7px",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid var(--border-color)",
+                      backgroundColor: "transparent",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Icons.X size={14} />
+                  </button>
+                </form>
+              ) : (
+                <button
+                  onClick={() => setShowAddCol(true)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    padding: "10px 16px",
+                    backgroundColor: "var(--accent-color)",
+                    border: "none",
+                    borderRadius: "var(--radius-md)",
+                    color: "#ffffff",
+                    fontSize: "0.95rem",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    transition: "background-color var(--transition-fast)",
+                    width: isMobile ? "100%" : "auto",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor = "var(--accent-hover)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "var(--accent-color)")
+                  }
+                >
+                  <Icons.Plus size={18} />
+                  <span>{t("header.add_col_btn")}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );

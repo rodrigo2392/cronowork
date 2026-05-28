@@ -151,7 +151,7 @@ export const BoardProvider = ({ children }) => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => window.innerWidth < 768);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isProjectSettingsModalOpen, setIsProjectSettingsModalOpen] = useState(false);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);

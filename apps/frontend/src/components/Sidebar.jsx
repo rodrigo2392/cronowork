@@ -18,26 +18,48 @@ export default function Sidebar() {
     setEditingProject,
   } = useBoard();
 
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleNewProject = () => {
     setEditingProject(null);
     setIsProjectModalOpen(true);
   };
 
   return (
-    <motion.aside
-      className="glass"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        borderRight: '1px solid var(--border-color)',
-        overflow: 'hidden',
-        position: 'relative',
-        zIndex: 10,
-      }}
-      animate={{ width: isSidebarCollapsed ? 72 : 260 }}
-      transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-    >
+    <>
+      {isMobile && !isSidebarCollapsed && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setIsSidebarCollapsed(true)}
+        />
+      )}
+      <motion.aside
+        className="glass"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          borderRight: '1px solid var(--border-color)',
+          overflow: 'hidden',
+          position: 'relative',
+          zIndex: 10,
+        }}
+        animate={
+          isMobile
+            ? { x: isSidebarCollapsed ? '-100%' : '0%', width: 260 }
+            : { x: '0%', width: isSidebarCollapsed ? 72 : 260 }
+        }
+        transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+      >
       {/* Sidebar Header */}
       <div
         style={{
@@ -57,21 +79,39 @@ export default function Sidebar() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.15 }}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
             >
-              <img
-                src="/favicon.svg"
-                alt="Cronowork Logo"
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: 'var(--radius-sm)',
-                  objectFit: 'contain',
-                }}
-              />
-              <span style={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '1.05rem' }}>
-                Cronowork
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img
+                  src="/favicon.svg"
+                  alt="Cronowork Logo"
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: 'var(--radius-sm)',
+                    objectFit: 'contain',
+                  }}
+                />
+                <span style={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '1.05rem' }}>
+                  Cronowork
+                </span>
+              </div>
+              {isMobile && (
+                <button
+                  onClick={() => setIsSidebarCollapsed(true)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Icons.X size={20} />
+                </button>
+              )}
             </motion.div>
           ) : (
             <motion.img
@@ -130,7 +170,12 @@ export default function Sidebar() {
           return (
             <button
               key={project.id}
-              onClick={() => selectProject(project.id)}
+              onClick={() => {
+                selectProject(project.id);
+                if (isMobile) {
+                  setIsSidebarCollapsed(true);
+                }
+              }}
               style={{
                 position: 'relative',
                 display: 'flex',
@@ -263,5 +308,6 @@ export default function Sidebar() {
         </button>
       </div>
     </motion.aside>
+    </>
   );
 }

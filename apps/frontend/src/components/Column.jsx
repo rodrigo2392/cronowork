@@ -77,7 +77,7 @@ export default function Column({ column, index }) {
           {...provided.draggableProps}
           style={{
             ...provided.draggableProps.style,
-            width: '300px',
+            width: 'var(--column-width)',
             maxHeight: '100%',
             display: 'flex',
             flexDirection: 'column',
@@ -85,7 +85,7 @@ export default function Column({ column, index }) {
             backgroundColor: 'var(--bg-secondary)',
             border: '1px solid var(--border-color)',
             boxShadow: snapshot.isDragging ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
-            marginRight: '24px',
+            marginRight: 'var(--column-margin)',
           }}
           className={`column-container ${snapshot.isDragging ? 'dragging-column' : ''}`}
         >

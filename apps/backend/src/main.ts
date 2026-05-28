@@ -14,7 +14,13 @@ async function bootstrap() {
     },
   }));
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost:5750',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5750',
+    ],
+    credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   await app.listen(3500);

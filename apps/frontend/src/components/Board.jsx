@@ -54,9 +54,10 @@ export default function Board() {
     <div
       style={{
         flex: 1,
-        height: 'calc(100vh - 120px)', // Subtract header height
+        minHeight: 0,
         overflowY: 'hidden',
         overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       <DragDropContext onDragEnd={handleDragEnd}>
