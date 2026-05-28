@@ -414,7 +414,7 @@ export const BoardProvider = ({ children }) => {
     if (currentMembers.includes(email)) throw new Error("already_member");
     
     if (token) {
-      const response = await fetch(`http://localhost:3500/projects/${projectId}/invite`, {
+      const response = await fetch(`${API_URL}/projects/${projectId}/invite`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

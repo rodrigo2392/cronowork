@@ -4,6 +4,8 @@ import * as Icons from "lucide-react";
 import { useTranslation } from "../context/LanguageContext";
 import { useBoard } from "../context/BoardContext";
 import { useAuth } from "../context/AuthContext";
+import { API_URL } from "../config";
+
 
 const PROJECT_ICONS = [
   "Layers",
@@ -65,7 +67,7 @@ export default function Onboarding() {
       if (emails.length > 0 && token && newProject?.id) {
         for (const email of emails) {
           await fetch(
-            `http://localhost:3500/projects/${newProject.id}/invite`,
+            `${API_URL}/projects/${newProject.id}/invite`,
             {
               method: "POST",
               headers: {

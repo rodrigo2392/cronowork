@@ -452,7 +452,7 @@ export default function TaskModal() {
   const notifyMention = async (targetEmail, taskTitle) => {
     if (!token || !targetEmail || targetEmail === user?.email) return;
     try {
-      await fetch("http://localhost:3500/notifications", {
+      await fetch(`${API_URL}/notifications`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
