@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider, useTranslation } from "./context/LanguageContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
 import { SocketProvider } from "./context/SocketContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import LandingPage from "./components/LandingPage";
 import AuthPage from "./components/AuthPage";
 import Sidebar from "./components/Sidebar";
@@ -269,20 +270,17 @@ function MainApp() {
 }
 
 export default function App() {
-  React.useEffect(() => {
-    const savedTheme = localStorage.getItem("vibe_theme") || "dark";
-    document.documentElement.setAttribute("data-theme", savedTheme);
-  }, []);
-
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <SocketProvider>
-          <ConfirmProvider>
-            <MainApp />
-          </ConfirmProvider>
-        </SocketProvider>
-      </AuthProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <ConfirmProvider>
+              <MainApp />
+            </ConfirmProvider>
+          </SocketProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }

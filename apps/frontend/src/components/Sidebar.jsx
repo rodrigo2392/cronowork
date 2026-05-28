@@ -59,45 +59,36 @@ export default function Sidebar() {
               transition={{ duration: 0.15 }}
               style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
             >
-              <div
-                className="flex-center"
+              <img
+                src="/favicon.svg"
+                alt="Cronowork Logo"
                 style={{
                   width: '32px',
                   height: '32px',
                   borderRadius: 'var(--radius-sm)',
-                  background: 'linear-gradient(135deg, var(--accent-color), var(--accent-hover))',
-                  color: 'white',
-                  fontWeight: '700',
-                  fontSize: '1.1rem',
-                  boxShadow: 'var(--glow-indigo)',
+                  objectFit: 'contain',
                 }}
-              >
-                C
-              </div>
+              />
               <span style={{ fontWeight: 600, letterSpacing: '0.5px', fontSize: '1.05rem' }}>
                 Cronowork
               </span>
             </motion.div>
           ) : (
-            <motion.div
+            <motion.img
               key="logo-small"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.15 }}
-              className="flex-center"
+              src="/favicon.svg"
+              alt="Cronowork Logo"
               style={{
                 width: '32px',
                 height: '32px',
                 borderRadius: 'var(--radius-sm)',
-                background: 'linear-gradient(135deg, var(--accent-color), var(--accent-hover))',
-                color: 'white',
-                fontWeight: '700',
-                fontSize: '1.1rem',
+                objectFit: 'contain',
               }}
-            >
-              C
-            </motion.div>
+            />
           )}
         </AnimatePresence>
       </div>

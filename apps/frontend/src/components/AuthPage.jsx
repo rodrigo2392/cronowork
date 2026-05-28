@@ -61,11 +61,13 @@ export default function AuthPage({ onBackToLanding }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Icons.Layers
-            size={32}
+          <img
+            src="/favicon.svg"
+            alt="Cronowork Logo"
             style={{
-              color: "var(--accent-color)",
-              filter: "drop-shadow(0 0 8px rgba(99, 102, 241, 0.4))",
+              width: "32px",
+              height: "32px",
+              objectFit: "contain",
             }}
           />
           <h1

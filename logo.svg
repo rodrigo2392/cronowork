@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 90" width="100%" height="100%">
+  <!-- Clock hands -->
+  <path d="M 50 45 L 50 25 M 50 45 L 65 52" stroke="#0052FF" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <!-- Outer circle with W shape at the bottom -->
+  <path d="M 29.1 66.5 A 30 30 0 1 1 70.9 66.5 L 60 75 L 50 65 L 40 75 Z" stroke="#0052FF" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <!-- Text -->
+  <text x="102" y="57" font-family="Outfit, Inter, system-ui, -apple-system, sans-serif" font-weight="700" font-size="35" fill="#0A2540" letter-spacing="1.5px">CRONOWORK</text>
+</svg>

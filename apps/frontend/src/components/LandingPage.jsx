@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Github, Code2, Bot, Layers, Zap, Sun, Moon, Globe, Menu, X } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import '../styles/LandingPage.css';
 
 const useTypewriter = (words, typingSpeed = 100, deletingSpeed = 50, pauseTime = 2000) => {
@@ -9,8 +10,11 @@ const useTypewriter = (words, typingSpeed = 100, deletingSpeed = 50, pauseTime =
   const [wordIndex, setWordIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const wordsJson = JSON.stringify(words);
+
   useEffect(() => {
-    const currentWord = words[wordIndex];
+    const wordsArr = JSON.parse(wordsJson);
+    const currentWord = wordsArr[wordIndex] || '';
     let timeout;
     
     if (isDeleting) {
@@ -27,34 +31,31 @@ const useTypewriter = (words, typingSpeed = 100, deletingSpeed = 50, pauseTime =
       timeout = setTimeout(() => setIsDeleting(true), pauseTime);
     } else if (isDeleting && text === '') {
       setIsDeleting(false);
-      setWordIndex((prev) => (prev + 1) % words.length);
+      setWordIndex((prev) => (prev + 1) % wordsArr.length);
     }
 
     return () => clearTimeout(timeout);
-  }, [text, isDeleting, words, wordIndex, typingSpeed, deletingSpeed, pauseTime]);
+  }, [text, isDeleting, wordsJson, wordIndex, typingSpeed, deletingSpeed, pauseTime]);
 
   return text;
 };
 
 export default function LandingPage({ onNavigateToAuth }) {
   const { t, locale, toggleLanguage } = useTranslation();
-  const [theme, setTheme] = useState(localStorage.getItem('vibe_theme') || 'dark');
+  const { theme, toggleTheme } = useTheme();
   const [activeShowcase, setActiveShowcase] = useState(0);
   const [activeFaq, setActiveFaq] = useState(null);
   const [activeUseCase, setActiveUseCase] = useState(1);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const typedText = useTypewriter([
+  const typewriterWords = React.useMemo(() => [
     t("landing.title_span") || "Agentes de IA",
     "Claude Code",
     "Desarrolladores",
     "Equipos Autónomos"
-  ]);
+  ], [t]);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('vibe_theme', theme);
-  }, [theme]);
+  const typedText = useTypewriter(typewriterWords);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -62,10 +63,6 @@ export default function LandingPage({ onNavigateToAuth }) {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
 
   const handleMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -121,7 +118,7 @@ export default function LandingPage({ onNavigateToAuth }) {
       {/* Navbar */}
       <nav className="landing-nav">
         <div className="landing-logo">
-          <Layers className="landing-logo-icon" size={28} />
+          <img src="/favicon.svg" alt="Cronowork Logo" className="landing-logo-icon" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
           Cronowork
         </div>
         <div className="landing-nav-links desktop-only">

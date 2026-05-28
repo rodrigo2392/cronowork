@@ -7,6 +7,7 @@ import { useTranslation } from "../context/LanguageContext";
 import { useConfirm } from "../context/ConfirmContext";
 import { useSocket } from "../context/SocketContext";
 import ProfileModal from "./ProfileModal";
+import { useTheme } from "../context/ThemeContext";
 import { API_URL } from "../config";
 
 export default function Header() {
@@ -40,9 +41,7 @@ export default function Header() {
 
   const [newColTitle, setNewColTitle] = useState("");
   const [showAddCol, setShowAddCol] = useState(false);
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem("vibe_theme") || "dark",
-  );
+  const { theme, toggleTheme } = useTheme();
   const { t, locale, toggleLanguage } = useTranslation();
   const { confirm } = useConfirm();
   const { user, logout } = useAuth();
@@ -131,12 +130,7 @@ export default function Header() {
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "U";
 
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    localStorage.setItem("vibe_theme", newTheme);
-    document.documentElement.setAttribute("data-theme", newTheme);
-  };
+
 
   const [sessionTime, setSessionTime] = useState(0);
 

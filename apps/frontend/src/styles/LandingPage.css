@@ -10,9 +10,6 @@
   font-family: var(--font-sans);
   scroll-behavior: smooth;
   position: relative;
-  transition:
-    background-color var(--transition-normal),
-    color var(--transition-normal);
 }
 
 /* Interactive Hero Grid Background */
@@ -90,7 +87,6 @@
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--border-color);
-  transition: all var(--transition-normal);
 }
 
 .landing-logo {
@@ -978,5 +974,43 @@
   .faq-section {
     padding: 60px 24px;
   }
+}
+
+/* Light Mode Adaptability Overrides */
+[data-theme="light"] .hiw-step {
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .bento-card {
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .uc-tab:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .uc-tab.active {
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .uc-mockup-header {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .mobile-menu-dropdown {
+  box-shadow: var(--shadow-lg);
+}
+
+[data-theme="light"] .showcase-image-wrapper {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .showcase-image-wrapper.img-1 {
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.12),
+    0 0 40px rgba(99, 102, 241, 0.05);
 }
 
