@@ -6,18 +6,18 @@
   --bg-secondary: #0f0f13;
   --bg-tertiary: #16161c;
   --bg-hover: #22222a;
-  
+
   --border-color: #1f1f27;
   --border-hover: #2e2e3a;
-  
+
   --text-primary: #f4f4f5;
   --text-secondary: #a1a1aa;
   --text-muted: #52525b;
-  
+
   --accent-color: #6366f1;
   --accent-light: rgba(99, 102, 241, 0.1);
   --accent-hover: #4f46e5;
-  
+
   /* Priority Colors */
   --priority-low: #3b82f6;
   --priority-low-bg: rgba(59, 130, 246, 0.08);
@@ -32,8 +32,10 @@
 
   /* Shadows & Glassmorphism */
   --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+  --shadow-md:
+    0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg:
+    0 12px 24px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
   --glow-indigo: 0 0 12px rgba(99, 102, 241, 0.2);
   --glass-bg: rgba(15, 15, 19, 0.7);
   --glass-blur: blur(12px);
@@ -47,10 +49,12 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
-  
+
   /* Typography */
-  --font-sans: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  
+  --font-sans:
+    "Outfit", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+
   /* Transitions */
   --transition-fast: 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -62,22 +66,24 @@
   --bg-secondary: #f1f5f9;
   --bg-tertiary: #ffffff;
   --bg-hover: #e2e8f0;
-  
+
   --border-color: #cbd5e1;
   --border-hover: #94a3b8;
-  
+
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
-  
+
   --accent-color: #4f46e5;
   --accent-light: rgba(79, 70, 229, 0.1);
   --accent-hover: #4338ca;
-  
+
   /* Shadows & Glassmorphism adjustments for light mode */
   --shadow-sm: 0 2px 8px -1px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  --shadow-md:
+    0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.05);
+  --shadow-lg:
+    0 12px 24px -4px rgba(0, 0, 0, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.08);
   --glow-indigo: 0 0 12px rgba(79, 70, 229, 0.3);
   --glass-bg: rgba(255, 255, 255, 0.75);
 }
@@ -94,6 +100,13 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-sans);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* Lock scroll only on the board view */
+.board-layout {
   overflow: hidden;
   height: 100vh;
   width: 100vw;
@@ -124,8 +137,14 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Dragging visual adjustments */
@@ -146,7 +165,10 @@ body {
 }
 
 .column-container {
-  transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .column-list.is-dragging-over {
@@ -222,7 +244,8 @@ textarea:focus-visible {
   border: 1px solid var(--border-hover) !important;
   padding: 2px 6px;
   border-radius: 4px;
-  font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace !important;
+  font-family:
+    Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace !important;
   color: var(--text-primary) !important;
   font-size: 0.85em;
 }
@@ -256,7 +279,8 @@ textarea:focus-visible {
     --column-margin: 16px;
   }
 
-  body {
+  /* Only lock scroll on the board layout, not on standalone pages like onboarding */
+  .board-layout {
     overflow: hidden;
     position: fixed;
     width: 100%;
@@ -286,7 +310,6 @@ textarea:focus-visible {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     z-index: 999;
@@ -294,8 +317,12 @@ textarea:focus-visible {
   }
 
   @keyframes fadeInBg {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   /* Main Board Planner Area */
@@ -320,11 +347,17 @@ textarea:focus-visible {
   .modal-content {
     width: 100% !important;
     max-width: 100% !important;
-    height: 90vh !important;
+    max-height: 90vh !important;
+    height: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
     margin: 0 !important;
     border-bottom: none !important;
     padding: 20px 16px !important;
   }
-}
 
+  .modal-row-2col {
+    grid-template-columns: 1fr !important;
+  }
+}

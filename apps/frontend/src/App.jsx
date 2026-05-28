@@ -138,6 +138,7 @@ function BoardWrapper() {
 
   return (
     <div
+      className="board-layout"
       style={{
         display: "flex",
         width: "100vw",

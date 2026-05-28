@@ -45,6 +45,7 @@ export default function Header() {
   const [showAddCol, setShowAddCol] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
+  const [showProjectMenu, setShowProjectMenu] = useState(false);
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -336,6 +337,99 @@ export default function Header() {
             >
               {activeProject.name}
             </h1>
+            {isMobile ? (
+              /* Mobile: dropdown menu for project actions */
+              <div style={{ position: "relative" }}>
+                <button
+                  onClick={() => setShowProjectMenu(!showProjectMenu)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "var(--text-muted)",
+                    cursor: "pointer",
+                    padding: "8px",
+                    borderRadius: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    transition: "all var(--transition-fast)",
+                  }}
+                  title="Acciones del proyecto"
+                >
+                  <Icons.MoreVertical size={20} />
+                </button>
+                {showProjectMenu && (
+                  <>
+                    <div
+                      style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        width: "100vw",
+                        height: "100vh",
+                        zIndex: 49,
+                      }}
+                      onClick={() => setShowProjectMenu(false)}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "100%",
+                        right: 0,
+                        marginTop: "4px",
+                        backgroundColor: "var(--bg-secondary)",
+                        border: "1px solid var(--border-color)",
+                        borderRadius: "var(--radius-md)",
+                        boxShadow: "var(--shadow-lg)",
+                        zIndex: 50,
+                        minWidth: "200px",
+                        padding: "6px",
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      {[
+                        { icon: Icons.Edit3, label: t("header.edit_project"), onClick: handleEditProject, color: "var(--text-primary)" },
+                        { icon: Icons.Bot, label: "Conectar Agente MCP", onClick: () => setIsMcpModalOpen(true), color: "var(--accent-color)" },
+                        { icon: Icons.Settings, label: "Ajustes del Proyecto", onClick: () => setIsProjectSettingsModalOpen(true), color: "var(--text-primary)" },
+                        { icon: Icons.Trash2, label: t("header.delete_project"), onClick: handleDeleteProject, color: "var(--priority-high)" },
+                        { icon: Icons.RotateCcw, label: t("header.reset"), onClick: handleResetData, color: "var(--priority-high)" },
+                      ].map((item, i) => {
+                        const Icon = item.icon;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => { setShowProjectMenu(false); item.onClick(); }}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
+                              padding: "10px 12px",
+                              background: "transparent",
+                              border: "none",
+                              color: item.color,
+                              fontSize: "0.88rem",
+                              fontWeight: 500,
+                              cursor: "pointer",
+                              borderRadius: "var(--radius-sm)",
+                              transition: "background 0.15s",
+                              width: "100%",
+                              textAlign: "left",
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                          >
+                            <Icon size={16} />
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              /* Desktop: inline buttons */
+              <>
             <button
               onClick={handleEditProject}
               style={{
@@ -459,6 +553,8 @@ export default function Header() {
             >
               <Icons.RotateCcw size={18} />
             </button>
+              </>
+            )}
           </div>
           <p
             style={{

@@ -584,7 +584,9 @@ export default function TaskModal() {
 
   const handlePostComment = (parentId = null) => {
     const content = parentId ? replyContent : newComment;
-    const stripped = content.replace(/<[^>]*>?/gm, "").trim();
+    // The mention picker inserts a trailing &nbsp; entity after the styled name;
+    // normalize it to a real space so the mention token doesn't get glued to it.
+    const stripped = content.replace(/<[^>]*>?/gm, "").replace(/&nbsp;/gi, " ").trim();
     if (!stripped) return;
 
     const newCommentObj = {
@@ -1374,6 +1376,7 @@ export default function TaskModal() {
 
             {/* Due Date & Assignee Row */}
             <div
+              className="modal-row-2col"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",

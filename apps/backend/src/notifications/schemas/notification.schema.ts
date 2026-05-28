@@ -12,7 +12,7 @@ export class Notification extends Document {
   @Prop({ required: true })
   message: string;
 
-  @Prop({ required: true, enum: ['INVITE', 'ASSIGN', 'SYSTEM'], default: 'SYSTEM' })
+  @Prop({ required: true, enum: ['INVITE', 'ASSIGN', 'MENTION', 'SYSTEM'], default: 'SYSTEM' })
   type: string;
 
   @Prop({ default: false })

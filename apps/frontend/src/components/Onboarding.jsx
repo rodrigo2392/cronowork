@@ -23,6 +23,7 @@ export default function Onboarding() {
   const { addProjectAsync } = useBoard();
   const { token } = useAuth();
 
+  const [isMobile, setIsMobile] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("Rocket");
@@ -32,6 +33,13 @@ export default function Onboarding() {
   const [emails, setEmails] = useState([]);
   const [emailInput, setEmailInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleAddEmail = (e) => {
     if (e.key === "Enter") {
@@ -94,12 +102,16 @@ export default function Onboarding() {
     <div
       style={{
         display: "flex",
-        alignItems: "center",
+        alignItems: isMobile ? "stretch" : "flex-start",
         justifyContent: "center",
         minHeight: "100vh",
+        minHeight: "100dvh",
         width: "100vw",
         backgroundColor: "var(--bg-primary)",
-        padding: "24px",
+        padding: isMobile ? "0" : "24px",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        boxSizing: "border-box",
       }}
     >
       <motion.div
@@ -108,15 +120,18 @@ export default function Onboarding() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         style={{
           width: "100%",
-          maxWidth: "560px",
-          backgroundColor: "var(--bg-secondary)",
-          borderRadius: "var(--radius-lg)",
-          border: "1px solid var(--border-color)",
-          boxShadow: "var(--shadow-lg)",
-          padding: "40px",
+          maxWidth: isMobile ? "100%" : "560px",
+          backgroundColor: isMobile ? "var(--bg-primary)" : "var(--bg-secondary)",
+          borderRadius: isMobile ? "0" : "var(--radius-lg)",
+          border: isMobile ? "none" : "1px solid var(--border-color)",
+          boxShadow: isMobile ? "none" : "var(--shadow-lg)",
+          padding: isMobile ? "24px 20px 40px" : "40px",
           display: "flex",
           flexDirection: "column",
           gap: "24px",
+          marginTop: isMobile ? "0" : "auto",
+          marginBottom: isMobile ? "0" : "auto",
+          minHeight: isMobile ? "100dvh" : "auto",
         }}
       >
         {/* Header */}
