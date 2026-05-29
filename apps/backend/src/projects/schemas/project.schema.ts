@@ -66,6 +66,14 @@ export class Project extends Document {
   @Prop({ type: [String], default: [] })
   defaultTags: string[];
 
+  // Default assignee (email) for newly created tasks. Empty = unassigned.
+  @Prop({ default: '' })
+  defaultAssignee: string;
+
+  // Auto-start the time tracker when a task moves to an "In Progress" column.
+  @Prop({ default: true })
+  autoStartTimer: boolean;
+
   // Whether AI task generation is allowed for this project.
   @Prop({ default: true })
   aiEnabled: boolean;

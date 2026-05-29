@@ -52,7 +52,8 @@ export class ProjectsService {
   private static readonly UPDATABLE_FIELDS = [
     'name', 'description', 'prefix', 'icon', 'tasks', 'columns', 'columnOrder',
     'doneColumnId', 'autoArchiveEnabled', 'autoArchiveDays', 'autoDeleteArchivedDays',
-    'defaultPriority', 'defaultTags', 'aiEnabled', 'notifySettings', 'activityLog',
+    'defaultPriority', 'defaultTags', 'defaultAssignee', 'autoStartTimer',
+    'aiEnabled', 'notifySettings', 'activityLog',
   ];
 
   async update(id: string, userId: string, email: string, projectData: any): Promise<Project> {

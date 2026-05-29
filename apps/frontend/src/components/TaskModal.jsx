@@ -355,7 +355,7 @@ export default function TaskModal() {
       setDueDate("");
       setSubtasks([]);
       setComments([]);
-      setAssignee("");
+      setAssignee(activeProj?.defaultAssignee || "");
     }
   }, [editingTask, isTaskModalOpen]);
 

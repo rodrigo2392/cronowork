@@ -22,6 +22,8 @@ export default function ProjectSettingsModal() {
   const [doneColumnId, setDoneColumnId] = useState('');
   const [defaultPriority, setDefaultPriority] = useState('medium');
   const [defaultTagsInput, setDefaultTagsInput] = useState('');
+  const [defaultAssignee, setDefaultAssignee] = useState('');
+  const [autoStartTimer, setAutoStartTimer] = useState(true);
   const [aiEnabled, setAiEnabled] = useState(true);
   const [notifySettings, setNotifySettings] = useState({ muted: false, assign: true, mention: true });
 
@@ -33,6 +35,8 @@ export default function ProjectSettingsModal() {
       setDoneColumnId(resolveDoneColumnId(activeProject) || '');
       setDefaultPriority(activeProject.defaultPriority || 'medium');
       setDefaultTagsInput((activeProject.defaultTags || []).join(', '));
+      setDefaultAssignee(activeProject.defaultAssignee || '');
+      setAutoStartTimer(activeProject.autoStartTimer !== false);
       setAiEnabled(activeProject.aiEnabled !== false);
       const ns = activeProject.notifySettings || {};
       setNotifySettings({
@@ -47,6 +51,10 @@ export default function ProjectSettingsModal() {
 
   const columnOrder = activeProject.columnOrder || [];
   const isOwner = activeProject.userId === user?.id;
+  const memberEmails = Array.from(new Set([
+    ...((isOwner && user?.email) ? [user.email] : []),
+    ...(activeProject.members || []),
+  ]));
   const selectStyle = {
     width: '100%', padding: '10px 12px', borderRadius: 'var(--radius-md)',
     border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-tertiary)',
@@ -64,6 +72,8 @@ export default function ProjectSettingsModal() {
       doneColumnId: doneColumnId || undefined,
       defaultPriority,
       defaultTags,
+      defaultAssignee,
+      autoStartTimer,
       aiEnabled,
       notifySettings,
     };
@@ -241,6 +251,24 @@ export default function ProjectSettingsModal() {
                   style={{ ...selectStyle, cursor: 'text' }}
                 />
               </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Responsable por defecto</span>
+                <select value={defaultAssignee} onChange={(e) => setDefaultAssignee(e.target.value)} style={selectStyle}>
+                  <option value="">Sin asignar</option>
+                  {memberEmails.map((email) => (
+                    <option key={email} value={email}>{email}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 500 }}>
+              Cronómetro
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {switchRow(autoStartTimer, setAutoStartTimer, 'Auto-iniciar al pasar a "En progreso"', 'Inicia el cronómetro automáticamente al mover una tarea a una columna de progreso.')}
             </div>
           </div>
 

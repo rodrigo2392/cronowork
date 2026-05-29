@@ -947,7 +947,7 @@ export const BoardProvider = ({ children }) => {
       // Auto-start tracker if moved to a "Progreso" / "Progress" column
       const destTitleLower = destCol.title.toLowerCase();
       const isProgressColumn = destTitleLower.includes('progreso') || destTitleLower.includes('progress');
-      if (isProgressColumn && (!activeTracker || activeTracker.taskId !== draggableId)) {
+      if (activeProject.autoStartTimer !== false && isProgressColumn && (!activeTracker || activeTracker.taskId !== draggableId)) {
         // Only start if not already tracking this task
         setTimeout(() => {
           startTracking(draggableId);
