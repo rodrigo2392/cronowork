@@ -749,66 +749,66 @@ export const BoardProvider = ({ children }) => {
     logActivity(activeProject.id, `Unarchived task "${task.title}"`);
   };
 
-  // --- Auto Archive Logic ---
+  // --- Auto Archive / Auto Delete Logic ---
   useEffect(() => {
     if (!activeProject || !activeProject.columnOrder.length) return;
 
-    const lastColumnId = resolveDoneColumnId(activeProject);
-    const lastColumn = activeProject.columns[lastColumnId];
-    if (!lastColumn || !lastColumn.taskIds.length) return;
-
-    // Get autoArchiveDays from project config, default to 7
-    const archiveDays = activeProject.autoArchiveDays || 7;
-    const archiveMs = archiveDays * 24 * 60 * 60 * 1000;
     const now = Date.now();
+    let updatedTasks = { ...activeProject.tasks };
+    let updatedColumns = { ...activeProject.columns };
+    let changed = false;
+    const activityMsgs = [];
 
-    let tasksToArchive = [];
-    
-    lastColumn.taskIds.forEach(taskId => {
-      const task = activeProject.tasks[taskId];
-      if (task && !task.archived) {
-        // If the task has an updatedAt or we rely on a completedAt, but we don't have one explicitly.
-        // Let's use the task's last timeLog or just the fact it's in this column.
-        // To be accurate, we should really track when it entered the column.
-        // But for simplicity without schema migration, we'll check if there's an 'updatedAt' or if we can infer from timeLogs.
-        // Alternatively, since we don't have a strict 'movedToLastColumnAt', we'll simulate auto-archive by a simpler heuristic or we must add a timestamp.
-        // For now, let's use a mocked logic: we add a property `movedToDoneAt` when it enters the last column in handleDragEnd.
-        // Let's check `movedToDoneAt`.
-        if (task.movedToDoneAt) {
-          const timeInDone = now - new Date(task.movedToDoneAt).getTime();
-          if (timeInDone > archiveMs) {
-            tasksToArchive.push(taskId);
-          }
+    // 1) Auto-archive tasks sitting in the done column (if enabled).
+    if (activeProject.autoArchiveEnabled !== false) {
+      const lastColumnId = resolveDoneColumnId(activeProject);
+      const lastColumn = updatedColumns[lastColumnId];
+      if (lastColumn && lastColumn.taskIds.length) {
+        const archiveMs = (activeProject.autoArchiveDays || 7) * 24 * 60 * 60 * 1000;
+        const toArchive = lastColumn.taskIds.filter(taskId => {
+          const task = updatedTasks[taskId];
+          return task && !task.archived && task.movedToDoneAt &&
+            (now - new Date(task.movedToDoneAt).getTime() > archiveMs);
+        });
+        if (toArchive.length) {
+          updatedColumns[lastColumnId] = {
+            ...lastColumn,
+            taskIds: lastColumn.taskIds.filter(id => !toArchive.includes(id))
+          };
+          toArchive.forEach(taskId => {
+            updatedTasks[taskId] = { ...updatedTasks[taskId], archived: true, archivedAt: new Date().toISOString() };
+            activityMsgs.push(`Auto-archived task "${updatedTasks[taskId].title}"`);
+          });
+          changed = true;
         }
       }
-    });
+    }
 
-    if (tasksToArchive.length > 0) {
-      // Archive them in batch
-      let updatedColumns = { ...activeProject.columns };
-      let updatedTasks = { ...activeProject.tasks };
-
-      updatedColumns[lastColumnId] = {
-        ...lastColumn,
-        taskIds: lastColumn.taskIds.filter(id => !tasksToArchive.includes(id))
-      };
-
-      tasksToArchive.forEach(taskId => {
-        updatedTasks[taskId] = {
-          ...updatedTasks[taskId],
-          archived: true,
-          archivedAt: new Date().toISOString()
-        };
+    // 2) Permanently delete archived tasks older than the configured window.
+    const deleteDays = Number(activeProject.autoDeleteArchivedDays) || 0;
+    if (deleteDays > 0) {
+      const deleteMs = deleteDays * 24 * 60 * 60 * 1000;
+      const toDelete = Object.keys(updatedTasks).filter(taskId => {
+        const task = updatedTasks[taskId];
+        return task && task.archived && task.archivedAt &&
+          (now - new Date(task.archivedAt).getTime() > deleteMs);
       });
+      if (toDelete.length) {
+        toDelete.forEach(taskId => { delete updatedTasks[taskId]; });
+        Object.keys(updatedColumns).forEach(colId => {
+          const col = updatedColumns[colId];
+          if (col && col.taskIds && col.taskIds.some(id => toDelete.includes(id))) {
+            updatedColumns[colId] = { ...col, taskIds: col.taskIds.filter(id => !toDelete.includes(id)) };
+          }
+        });
+        activityMsgs.push(`Auto-deleted ${toDelete.length} archived task(s)`);
+        changed = true;
+      }
+    }
 
-      const updatedProject = {
-        ...activeProject,
-        tasks: updatedTasks,
-        columns: updatedColumns
-      };
-      
-      updateProjectState(updatedProject);
-      tasksToArchive.forEach(id => logActivity(activeProject.id, `Auto-archived task "${updatedTasks[id].title}"`));
+    if (changed) {
+      updateProjectState({ ...activeProject, tasks: updatedTasks, columns: updatedColumns });
+      activityMsgs.forEach(msg => logActivity(activeProject.id, msg));
     }
   }, [activeProject]);
 

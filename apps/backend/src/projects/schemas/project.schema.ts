@@ -47,9 +47,28 @@ export class Project extends Document {
   @Prop()
   doneColumnId: string;
 
-  // Days a task can sit in the done column before auto-archiving.
+  // Auto-archive: master toggle + days a task can sit in the done column
+  // before archiving, + optional permanent deletion of archived tasks.
+  @Prop({ default: true })
+  autoArchiveEnabled: boolean;
+
   @Prop({ default: 7 })
   autoArchiveDays: number;
+
+  // 0 = never delete archived tasks.
+  @Prop({ default: 0 })
+  autoDeleteArchivedDays: number;
+
+  // Defaults applied to newly created tasks.
+  @Prop({ default: 'medium' })
+  defaultPriority: string;
+
+  @Prop({ type: [String], default: [] })
+  defaultTags: string[];
+
+  // Whether AI task generation is allowed for this project.
+  @Prop({ default: true })
+  aiEnabled: boolean;
 
   // Per-project notification preferences. Undefined => everything enabled.
   // { muted?: boolean, assign?: boolean, mention?: boolean }

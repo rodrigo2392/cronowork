@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useBoard, resolveDoneColumnId } from '../context/BoardContext';
+import { useAuth } from '../context/AuthContext';
+import { useConfirm } from '../context/ConfirmContext';
 import * as Icons from 'lucide-react';
 
 export default function ProjectSettingsModal() {
@@ -8,17 +10,30 @@ export default function ProjectSettingsModal() {
     isProjectSettingsModalOpen,
     setIsProjectSettingsModalOpen,
     activeProject,
-    updateProjectState
+    updateProjectState,
+    deleteProject,
   } = useBoard();
+  const { user } = useAuth();
+  const { confirm } = useConfirm();
 
   const [autoArchiveDays, setAutoArchiveDays] = useState(7);
+  const [autoArchiveEnabled, setAutoArchiveEnabled] = useState(true);
+  const [autoDeleteArchivedDays, setAutoDeleteArchivedDays] = useState(0);
   const [doneColumnId, setDoneColumnId] = useState('');
+  const [defaultPriority, setDefaultPriority] = useState('medium');
+  const [defaultTagsInput, setDefaultTagsInput] = useState('');
+  const [aiEnabled, setAiEnabled] = useState(true);
   const [notifySettings, setNotifySettings] = useState({ muted: false, assign: true, mention: true });
 
   useEffect(() => {
     if (activeProject) {
       setAutoArchiveDays(activeProject.autoArchiveDays || 7);
+      setAutoArchiveEnabled(activeProject.autoArchiveEnabled !== false);
+      setAutoDeleteArchivedDays(Number(activeProject.autoDeleteArchivedDays) || 0);
       setDoneColumnId(resolveDoneColumnId(activeProject) || '');
+      setDefaultPriority(activeProject.defaultPriority || 'medium');
+      setDefaultTagsInput((activeProject.defaultTags || []).join(', '));
+      setAiEnabled(activeProject.aiEnabled !== false);
       const ns = activeProject.notifySettings || {};
       setNotifySettings({
         muted: !!ns.muted,
@@ -31,29 +46,68 @@ export default function ProjectSettingsModal() {
   if (!isProjectSettingsModalOpen || !activeProject) return null;
 
   const columnOrder = activeProject.columnOrder || [];
+  const isOwner = activeProject.userId === user?.id;
+  const selectStyle = {
+    width: '100%', padding: '10px 12px', borderRadius: 'var(--radius-md)',
+    border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-tertiary)',
+    color: 'var(--text-primary)', outline: 'none', fontSize: '0.95rem', cursor: 'pointer'
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const defaultTags = defaultTagsInput.split(',').map((tg) => tg.trim()).filter(Boolean);
     const updatedProject = {
       ...activeProject,
       autoArchiveDays: Number(autoArchiveDays),
+      autoArchiveEnabled,
+      autoDeleteArchivedDays: Number(autoDeleteArchivedDays) || 0,
       doneColumnId: doneColumnId || undefined,
+      defaultPriority,
+      defaultTags,
+      aiEnabled,
       notifySettings,
     };
     updateProjectState(updatedProject);
     setIsProjectSettingsModalOpen(false);
   };
 
-  const toggleRow = (key, label, description, disabled = false) => (
+  const handleExport = () => {
+    const data = JSON.stringify(activeProject, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(activeProject.name || 'project').replace(/[^a-z0-9-_]+/gi, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: 'Eliminar proyecto',
+      message: `¿Seguro que deseas eliminar "${activeProject.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      cancelText: 'Cancelar',
+      isDanger: true,
+    });
+    if (ok) {
+      deleteProject(activeProject.id);
+      setIsProjectSettingsModalOpen(false);
+    }
+  };
+
+  const switchRow = (checked, onChange, label, description, disabled = false) => (
     <label style={{
       display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: disabled ? 'not-allowed' : 'pointer',
       opacity: disabled ? 0.5 : 1,
     }}>
       <input
         type="checkbox"
-        checked={key === 'muted' ? notifySettings.muted : notifySettings[key]}
+        checked={checked}
         disabled={disabled}
-        onChange={(e) => setNotifySettings((prev) => ({ ...prev, [key]: e.target.checked }))}
+        onChange={(e) => onChange(e.target.checked)}
         style={{ marginTop: '2px', width: '16px', height: '16px', cursor: disabled ? 'not-allowed' : 'pointer', accentColor: 'var(--accent-color)' }}
       />
       <span>
@@ -62,6 +116,15 @@ export default function ProjectSettingsModal() {
       </span>
     </label>
   );
+
+  const toggleRow = (key, label, description, disabled = false) =>
+    switchRow(
+      key === 'muted' ? notifySettings.muted : notifySettings[key],
+      (val) => setNotifySettings((prev) => ({ ...prev, [key]: val })),
+      label,
+      description,
+      disabled
+    );
 
   return createPortal(
     <div style={{
@@ -74,6 +137,7 @@ export default function ProjectSettingsModal() {
         style={{
           backgroundColor: 'var(--bg-secondary)', padding: '24px',
           borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: '400px',
+          maxHeight: '90vh', overflowY: 'auto',
           border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-lg)'
         }}
       >
@@ -122,26 +186,71 @@ export default function ProjectSettingsModal() {
 
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 500 }}>
-              Auto-archivar tareas finalizadas
+              Archivado automático
             </label>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
-              Las tareas que lleven este tiempo en la columna de completado se moverán automáticamente al archivo para mantener tu espacio de trabajo limpio.
+              Mueve al archivo las tareas terminadas tras cierto tiempo y, opcionalmente, las elimina de forma permanente.
             </p>
-            <select
-              value={autoArchiveDays}
-              onChange={(e) => setAutoArchiveDays(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-tertiary)',
-                color: 'var(--text-primary)', outline: 'none', fontSize: '0.95rem',
-                cursor: 'pointer'
-              }}
-            >
-              <option value={3}>3 días</option>
-              <option value={7}>7 días</option>
-              <option value={15}>15 días</option>
-              <option value={30}>30 días</option>
-            </select>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {switchRow(autoArchiveEnabled, setAutoArchiveEnabled, 'Auto-archivar tareas finalizadas', 'Las que lleven el tiempo indicado en la columna de completado.')}
+              <div style={{ opacity: autoArchiveEnabled ? 1 : 0.5 }}>
+                <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Archivar después de</span>
+                <select value={autoArchiveDays} disabled={!autoArchiveEnabled} onChange={(e) => setAutoArchiveDays(e.target.value)} style={selectStyle}>
+                  <option value={3}>3 días</option>
+                  <option value={7}>7 días</option>
+                  <option value={15}>15 días</option>
+                  <option value={30}>30 días</option>
+                </select>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Eliminar tareas archivadas</span>
+                <select value={autoDeleteArchivedDays} onChange={(e) => setAutoDeleteArchivedDays(e.target.value)} style={selectStyle}>
+                  <option value={0}>Nunca</option>
+                  <option value={7}>Tras 7 días</option>
+                  <option value={30}>Tras 30 días</option>
+                  <option value={90}>Tras 90 días</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 500 }}>
+              Valores por defecto de tareas
+            </label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
+              Se aplican al crear una tarea nueva en este proyecto.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Prioridad por defecto</span>
+                <select value={defaultPriority} onChange={(e) => setDefaultPriority(e.target.value)} style={selectStyle}>
+                  <option value="low">Baja</option>
+                  <option value="medium">Media</option>
+                  <option value="high">Alta</option>
+                  <option value="critical">Crítica</option>
+                </select>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Etiquetas por defecto (separadas por coma)</span>
+                <input
+                  type="text"
+                  value={defaultTagsInput}
+                  onChange={(e) => setDefaultTagsInput(e.target.value)}
+                  placeholder="ej. backend, urgente"
+                  style={{ ...selectStyle, cursor: 'text' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 500 }}>
+              Inteligencia Artificial
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {switchRow(aiEnabled, setAiEnabled, 'Permitir generación de tareas con IA', 'Habilita el botón "Generar tareas" y el endpoint de IA para este proyecto.')}
+            </div>
           </div>
 
           <div>
@@ -169,6 +278,40 @@ export default function ProjectSettingsModal() {
           >
             Guardar Ajustes
           </button>
+
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '4px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--priority-high)', marginBottom: '10px', fontWeight: 600 }}>
+              Zona de peligro
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={handleExport}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '10px', borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-color)', backgroundColor: 'transparent',
+                  color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer',
+                }}
+              >
+                <Icons.Download size={16} /> Exportar proyecto (JSON)
+              </button>
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    padding: '10px', borderRadius: 'var(--radius-md)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)', backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    color: 'var(--priority-high)', fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer',
+                  }}
+                >
+                  <Icons.Trash2 size={16} /> Eliminar proyecto
+                </button>
+              )}
+            </div>
+          </div>
         </form>
       </div>
     </div>,

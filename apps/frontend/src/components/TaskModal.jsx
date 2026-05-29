@@ -350,8 +350,8 @@ export default function TaskModal() {
     } else if (isTaskModalOpen) {
       setTitle("");
       setDescription("");
-      setPriority("medium");
-      setTags([]);
+      setPriority(activeProj?.defaultPriority || "medium");
+      setTags(Array.isArray(activeProj?.defaultTags) ? activeProj.defaultTags : []);
       setDueDate("");
       setSubtasks([]);
       setComments([]);

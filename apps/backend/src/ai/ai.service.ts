@@ -34,6 +34,11 @@ export class AiService {
       // Get the project to ensure user has access
       const project = await this.projectsService.findOne(projectId, userId, userEmail);
 
+      // Respect the per-project AI toggle.
+      if ((project as any).aiEnabled === false) {
+        throw new HttpException('La generación con IA está deshabilitada para este proyecto.', HttpStatus.FORBIDDEN);
+      }
+
       // Default to the first column (e.g. "To Do") if not provided
       const targetColumnId = columnId || project.columnOrder[0] || 'column-todo';
 
@@ -131,6 +136,7 @@ Always respond in JSON matching the exact schema provided. Do not use markdown b
       };
 
     } catch (error: any) {
+      if (error instanceof HttpException) throw error;
       this.logger.error(`Error generating tasks: ${error.message}`);
       throw new HttpException(error.message || 'Error al conectar con OpenAI', HttpStatus.INTERNAL_SERVER_ERROR);
     }

@@ -51,7 +51,8 @@ export class ProjectsService {
   // userId, sharedWith, members (ownership/ACL) to prevent privilege escalation.
   private static readonly UPDATABLE_FIELDS = [
     'name', 'description', 'prefix', 'icon', 'tasks', 'columns', 'columnOrder',
-    'doneColumnId', 'autoArchiveDays', 'notifySettings', 'activityLog',
+    'doneColumnId', 'autoArchiveEnabled', 'autoArchiveDays', 'autoDeleteArchivedDays',
+    'defaultPriority', 'defaultTags', 'aiEnabled', 'notifySettings', 'activityLog',
   ];
 
   async update(id: string, userId: string, email: string, projectData: any): Promise<Project> {

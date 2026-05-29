@@ -1144,7 +1144,7 @@ export default function Header() {
               </select>
 
               {/* AI Task Generator Button */}
-              {aiConfigured && !isReadOnly && (
+              {aiConfigured && !isReadOnly && activeProject.aiEnabled !== false && (
                 <button
                   onClick={() => setIsAiModalOpen(true)}
                   style={{
