@@ -27,7 +27,6 @@ export default function Header() {
     addColumn,
     setIsProjectModalOpen,
     setEditingProject,
-    deleteProject,
     clearAllData,
     setIsShareModalOpen,
     setIsAiModalOpen,
@@ -206,19 +205,6 @@ export default function Header() {
     setIsProjectModalOpen(true);
   };
 
-  const handleDeleteProject = async () => {
-    const isConfirmed = await confirm({
-      title: t("header.delete_project"),
-      message: `${t("header.confirm_delete_project")} "${activeProject.name}"?`,
-      confirmText: t("header.delete_project"),
-      cancelText: t("modal.project.cancel") || "Cancel",
-      isDanger: true
-    });
-    if (isConfirmed) {
-      deleteProject(activeProject.id);
-    }
-  };
-
   const handleNotificationClick = (notif) => {
     if (!notif.read) markAsRead(notif._id);
     
@@ -374,7 +360,6 @@ export default function Header() {
                         { icon: Icons.Edit3, label: t("header.edit_project"), onClick: handleEditProject, color: "var(--text-primary)" },
                         { icon: Icons.Bot, label: "Conectar Agente MCP", onClick: () => setIsMcpModalOpen(true), color: "var(--accent-color)" },
                         { icon: Icons.Settings, label: "Ajustes del Proyecto", onClick: () => setIsProjectSettingsModalOpen(true), color: "var(--text-primary)" },
-                        { icon: Icons.Trash2, label: t("header.delete_project"), onClick: handleDeleteProject, color: "var(--priority-high)" },
                         { icon: Icons.RotateCcw, label: t("header.reset"), onClick: handleResetData, color: "var(--priority-high)" },
                       ].map((item, i) => {
                         const Icon = item.icon;
@@ -485,31 +470,6 @@ export default function Header() {
               title="Ajustes del Proyecto"
             >
               <Icons.Settings size={18} />
-            </button>
-            <button
-              onClick={handleDeleteProject}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                padding: "8px",
-                borderRadius: "6px",
-                display: "flex",
-                alignItems: "center",
-                transition: "all var(--transition-fast)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "var(--priority-high)";
-                e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "var(--text-muted)";
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-              title={t("header.delete_project")}
-            >
-              <Icons.Trash2 size={18} />
             </button>
             <button
               onClick={handleResetData}

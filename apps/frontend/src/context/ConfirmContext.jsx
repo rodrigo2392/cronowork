@@ -60,7 +60,7 @@ export const ConfirmProvider = ({ children }) => {
               height: '100vh',
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
               backdropFilter: 'blur(4px)',
-              zIndex: 9999,
+              zIndex: 100000,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
