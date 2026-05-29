@@ -55,7 +55,9 @@ export default function Sidebar() {
           overflow: 'hidden',
           position: 'relative',
           zIndex: 10,
+          flexShrink: 0,
         }}
+        initial={false}
         animate={
           isMobile
             ? { x: isSidebarCollapsed ? '-100%' : '0%', width: 260 }
@@ -235,7 +237,9 @@ export default function Sidebar() {
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
                     flex: 1,
+                    minWidth: 0,
                   }}
+                  title={project.name}
                 >
                   {project.name}
                 </span>
