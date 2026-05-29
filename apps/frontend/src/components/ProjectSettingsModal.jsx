@@ -12,6 +12,7 @@ export default function ProjectSettingsModal() {
     activeProject,
     updateProjectState,
     deleteProject,
+    clearAllData,
   } = useBoard();
   const { user } = useAuth();
   const { confirm } = useConfirm();
@@ -118,6 +119,20 @@ export default function ProjectSettingsModal() {
     });
     if (ok) {
       deleteProject(activeProject.id);
+      setIsProjectSettingsModalOpen(false);
+    }
+  };
+
+  const handleReset = async () => {
+    const ok = await confirm({
+      title: 'Reestablecer',
+      message: 'Esto borra los datos locales del tablero en este dispositivo. Se volverán a cargar desde el servidor al recargar la página.',
+      confirmText: 'Reestablecer',
+      cancelText: 'Cancelar',
+      isDanger: true,
+    });
+    if (ok) {
+      clearAllData();
       setIsProjectSettingsModalOpen(false);
     }
   };
@@ -366,6 +381,18 @@ export default function ProjectSettingsModal() {
                 }}
               >
                 <Icons.Download size={16} /> Exportar proyecto (JSON)
+              </button>
+              <button
+                type="button"
+                onClick={handleReset}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '10px', borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-color)', backgroundColor: 'transparent',
+                  color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 500, cursor: 'pointer',
+                }}
+              >
+                <Icons.RotateCcw size={16} /> Reestablecer datos locales
               </button>
               {isOwner && (
                 <button

@@ -27,7 +27,6 @@ export default function Header() {
     addColumn,
     setIsProjectModalOpen,
     setEditingProject,
-    clearAllData,
     setIsShareModalOpen,
     setIsAiModalOpen,
     activeTracker,
@@ -247,19 +246,6 @@ export default function Header() {
     }
   };
 
-  const handleResetData = async () => {
-    const isConfirmed = await confirm({
-      title: t("header.reset"),
-      message: t("header.confirm_reset") || "¿Seguro que quieres borrar todos los datos locales?",
-      confirmText: t("header.reset") || "Restablecer",
-      cancelText: t("modal.project.cancel") || "Cancel",
-      isDanger: true
-    });
-    if (isConfirmed) {
-      clearAllData();
-    }
-  };
-
   const handleShare = () => {
     setIsShareModalOpen(true);
   };
@@ -360,7 +346,6 @@ export default function Header() {
                         { icon: Icons.Edit3, label: t("header.edit_project"), onClick: handleEditProject, color: "var(--text-primary)" },
                         { icon: Icons.Bot, label: "Conectar Agente MCP", onClick: () => setIsMcpModalOpen(true), color: "var(--accent-color)" },
                         { icon: Icons.Settings, label: "Ajustes del Proyecto", onClick: () => setIsProjectSettingsModalOpen(true), color: "var(--text-primary)" },
-                        { icon: Icons.RotateCcw, label: t("header.reset"), onClick: handleResetData, color: "var(--priority-high)" },
                       ].map((item, i) => {
                         const Icon = item.icon;
                         return (
@@ -470,31 +455,6 @@ export default function Header() {
               title="Ajustes del Proyecto"
             >
               <Icons.Settings size={18} />
-            </button>
-            <button
-              onClick={handleResetData}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--text-muted)",
-                cursor: "pointer",
-                padding: "8px",
-                borderRadius: "6px",
-                display: "flex",
-                alignItems: "center",
-                transition: "all var(--transition-fast)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "var(--priority-high)";
-                e.currentTarget.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "var(--text-muted)";
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-              title={t("header.reset")}
-            >
-              <Icons.RotateCcw size={18} />
             </button>
               </>
             )}
