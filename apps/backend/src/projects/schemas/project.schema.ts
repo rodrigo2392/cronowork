@@ -51,6 +51,11 @@ export class Project extends Document {
   @Prop({ default: 7 })
   autoArchiveDays: number;
 
+  // Per-project notification preferences. Undefined => everything enabled.
+  // { muted?: boolean, assign?: boolean, mention?: boolean }
+  @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
+  notifySettings: Record<string, boolean>;
+
   @Prop({ type: [MongooseSchema.Types.Mixed], default: [] })
   activityLog: any[];
 }

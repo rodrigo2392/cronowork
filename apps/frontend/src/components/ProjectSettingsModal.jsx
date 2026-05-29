@@ -13,11 +13,18 @@ export default function ProjectSettingsModal() {
 
   const [autoArchiveDays, setAutoArchiveDays] = useState(7);
   const [doneColumnId, setDoneColumnId] = useState('');
+  const [notifySettings, setNotifySettings] = useState({ muted: false, assign: true, mention: true });
 
   useEffect(() => {
     if (activeProject) {
       setAutoArchiveDays(activeProject.autoArchiveDays || 7);
       setDoneColumnId(resolveDoneColumnId(activeProject) || '');
+      const ns = activeProject.notifySettings || {};
+      setNotifySettings({
+        muted: !!ns.muted,
+        assign: ns.assign !== false,
+        mention: ns.mention !== false,
+      });
     }
   }, [activeProject, isProjectSettingsModalOpen]);
 
@@ -31,10 +38,30 @@ export default function ProjectSettingsModal() {
       ...activeProject,
       autoArchiveDays: Number(autoArchiveDays),
       doneColumnId: doneColumnId || undefined,
+      notifySettings,
     };
     updateProjectState(updatedProject);
     setIsProjectSettingsModalOpen(false);
   };
+
+  const toggleRow = (key, label, description, disabled = false) => (
+    <label style={{
+      display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? 0.5 : 1,
+    }}>
+      <input
+        type="checkbox"
+        checked={key === 'muted' ? notifySettings.muted : notifySettings[key]}
+        disabled={disabled}
+        onChange={(e) => setNotifySettings((prev) => ({ ...prev, [key]: e.target.checked }))}
+        style={{ marginTop: '2px', width: '16px', height: '16px', cursor: disabled ? 'not-allowed' : 'pointer', accentColor: 'var(--accent-color)' }}
+      />
+      <span>
+        <span style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-primary)' }}>{label}</span>
+        {description && <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)' }}>{description}</span>}
+      </span>
+    </label>
+  );
 
   return createPortal(
     <div style={{
@@ -115,6 +142,20 @@ export default function ProjectSettingsModal() {
               <option value={15}>15 días</option>
               <option value={30}>30 días</option>
             </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 500 }}>
+              Notificaciones
+            </label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
+              Controla qué eventos de este proyecto generan notificaciones para sus miembros.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {toggleRow('muted', 'Silenciar proyecto', 'No envía ninguna notificación (excepto invitaciones).')}
+              {toggleRow('assign', 'Asignación de tareas', 'Avisar cuando se asigna una tarea a alguien.', notifySettings.muted)}
+              {toggleRow('mention', 'Menciones', 'Avisar cuando se menciona a alguien en un comentario.', notifySettings.muted)}
+            </div>
           </div>
 
           <button
