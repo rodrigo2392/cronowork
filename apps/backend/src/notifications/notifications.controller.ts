@@ -3,6 +3,7 @@ import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from '../users/users.service';
 import { BadRequestException } from '@nestjs/common';
+import { CreateNotificationDto } from './dto/create-notification.dto';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
@@ -21,7 +22,7 @@ export class NotificationsController {
   }
 
   @Post()
-  async createNotification(@Request() req, @Body() data: any) {
+  async createNotification(@Request() req, @Body() data: CreateNotificationDto) {
     let targetUserId = data.targetUserId;
     if (!targetUserId && data.targetEmail) {
       const user = await this.usersService.findByEmail(data.targetEmail);

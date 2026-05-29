@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Request } from 'express';
+import { GenerateTasksDto } from './dto/generate-tasks.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('ai')
@@ -14,13 +15,14 @@ export class AiController {
   }
 
   @Post('generate')
-  async generateTasks(
-    @Req() req: Request,
-    @Body('prompt') prompt: string,
-    @Body('projectId') projectId: string,
-    @Body('columnId') columnId?: string,
-  ) {
+  async generateTasks(@Req() req: Request, @Body() body: GenerateTasksDto) {
     const user = req.user as any;
-    return this.aiService.generateAndInjectTasks(prompt, projectId, user.id, user.email, columnId);
+    return this.aiService.generateAndInjectTasks(
+      body.prompt,
+      body.projectId,
+      user.userId,
+      user.email,
+      body.columnId,
+    );
   }
 }

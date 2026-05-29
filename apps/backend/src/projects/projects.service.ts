@@ -15,21 +15,27 @@ export class ProjectsService {
     private readonly eventsGateway: EventsGateway,
   ) {}
 
+  // Builds an ownership/access filter, skipping any undefined/empty identity
+  // values (avoids Mongoose dropping `{ userId: undefined }` -> match-all).
+  private accessOr(userId?: string, email?: string): any[] {
+    const or: any[] = [];
+    if (userId) or.push({ userId }, { sharedWith: userId });
+    if (email) or.push({ members: email });
+    return or;
+  }
+
   async findAll(userId: string, email: string): Promise<Project[]> {
-    if (userId === 'ai-agent') {
-      return this.projectModel.find().exec();
-    }
-    return this.projectModel.find({ 
-      $or: [{ userId }, { sharedWith: userId }, { members: email }] 
-    }).exec();
+    const or = this.accessOr(userId, email);
+    if (or.length === 0) return [];
+    return this.projectModel.find({ $or: or }).exec();
   }
 
   async findOne(id: string, userId: string, email: string): Promise<Project> {
-    const query = userId === 'ai-agent' 
-      ? { id } 
-      : { id, $or: [{ userId }, { sharedWith: userId }, { members: email }] };
-      
-    const project = await this.projectModel.findOne(query).exec();
+    const or = this.accessOr(userId, email);
+    if (or.length === 0) {
+      throw new NotFoundException(`Project with ID ${id} not found`);
+    }
+    const project = await this.projectModel.findOne({ id, $or: or }).exec();
     if (!project) {
       throw new NotFoundException(`Project with ID ${id} not found`);
     }
@@ -41,31 +47,36 @@ export class ProjectsService {
     return newProject.save();
   }
 
-  async update(id: string, userId: string, email: string, projectData: any): Promise<Project> {
-    const query = userId === 'ai-agent'
-      ? { id }
-      : { id, $or: [{ userId }, { sharedWith: userId }, { members: email }] };
+  // Fields a caller is allowed to mutate via update(). Notably excludes
+  // userId, sharedWith, members (ownership/ACL) to prevent privilege escalation.
+  private static readonly UPDATABLE_FIELDS = [
+    'name', 'description', 'prefix', 'icon', 'tasks', 'columns', 'columnOrder',
+    'doneColumnId', 'autoArchiveDays', 'activityLog',
+  ];
 
-    let project = await this.projectModel.findOne(query).exec();
-    
+  async update(id: string, userId: string, email: string, projectData: any): Promise<Project> {
+    const or = this.accessOr(userId, email);
+    if (or.length === 0) throw new ForbiddenException('Access denied');
+
+    let project = await this.projectModel.findOne({ id, $or: or }).exec();
+
     if (!project) {
       // Fallback: If not found, it might be a new project creation via PUT
-      if (userId === 'ai-agent') throw new ForbiddenException('Access denied for AI agent creation');
-      
       const existing = await this.projectModel.findOne({ id }).exec();
       if (existing) throw new ForbiddenException('Access denied');
-      
+
       project = new this.projectModel({ ...projectData, userId, id });
     } else {
       // Extract raw data if it's a mongoose document
       const rawData = typeof projectData.toObject === 'function' ? projectData.toObject() : projectData;
-      
-      // Clean immutable fields
-      delete rawData._id;
-      delete rawData.id;
-      delete rawData.__v;
-      
-      Object.assign(project, rawData);
+
+      // Only assign whitelisted fields. Ownership/ACL fields (userId,
+      // sharedWith, members) and immutable fields (_id, id, __v) are ignored.
+      for (const key of ProjectsService.UPDATABLE_FIELDS) {
+        if (rawData[key] !== undefined) {
+          (project as any)[key] = rawData[key];
+        }
+      }
     }
 
     project.markModified('tasks');

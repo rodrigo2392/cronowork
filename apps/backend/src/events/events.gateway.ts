@@ -9,7 +9,14 @@ import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // En producción limitar al dominio del frontend
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost:5750',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:5750',
+      process.env.APP_URL || 'https://cronowork.app',
+    ],
+    credentials: true,
   },
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {

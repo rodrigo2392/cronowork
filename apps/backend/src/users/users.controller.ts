@@ -8,8 +8,9 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async findAll() {
-    return this.usersService.findAll();
+  async findAll(@Req() req: any) {
+    // Only users that share a project with the requester (not the whole directory).
+    return this.usersService.findRelatedUsers(req.user.userId, req.user.email);
   }
 
   @Put('profile')

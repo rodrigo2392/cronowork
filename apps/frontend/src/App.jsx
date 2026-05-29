@@ -193,13 +193,25 @@ function MainApp() {
       const params = new URLSearchParams(window.location.search);
       const callbackUrl = params.get("callback");
       if (callbackUrl) {
-        setIsRedirecting(true);
         try {
           const url = new URL(callbackUrl);
-          url.searchParams.append("token", token);
-          setTimeout(() => {
-            window.location.href = url.toString();
-          }, 1200); // Small delay to show the authorization success message
+          // SECURITY: only redirect (with the token) to trusted callbacks.
+          // Allow our own origin and local MCP clients (localhost/127.0.0.1).
+          // This blocks open-redirect token exfiltration to arbitrary domains.
+          const isLocalhost = ['localhost', '127.0.0.1'].includes(url.hostname);
+          const isSameOrigin = url.origin === window.location.origin;
+          const isAllowed =
+            (isLocalhost && (url.protocol === 'http:' || url.protocol === 'https:')) ||
+            (isSameOrigin && (url.protocol === 'http:' || url.protocol === 'https:'));
+          if (!isAllowed) {
+            console.error("Refusing redirect to untrusted callback URL:", callbackUrl);
+          } else {
+            setIsRedirecting(true);
+            url.searchParams.append("token", token);
+            setTimeout(() => {
+              window.location.href = url.toString();
+            }, 1200); // Small delay to show the authorization success message
+          }
         } catch (e) {
           console.error("Invalid callback URL provided:", callbackUrl);
           setIsRedirecting(false);

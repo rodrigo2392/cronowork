@@ -24,7 +24,7 @@ export class McpService {
   private readonly logger = new Logger(McpService.name);
   private sessions = new Map<
     string,
-    { transport: SSEServerTransport; server: Server }
+    { transport: SSEServerTransport; server: Server; userId?: string }
   >();
 
   constructor(
@@ -521,7 +521,7 @@ export class McpService {
     await server.connect(transport);
 
     const sessionId = transport.sessionId;
-    this.sessions.set(sessionId, { transport, server });
+    this.sessions.set(sessionId, { transport, server, userId: user.userId });
     this.logger.log(`MCP SSE connection established for session: ${sessionId}`);
 
     // Clean up when the client disconnects
@@ -548,6 +548,15 @@ export class McpService {
     if (!session) {
       this.logger.error(`Session not found: ${sessionId}. Active sessions: ${[...this.sessions.keys()].join(', ')}`);
       res.status(404).send("Session not found");
+      return;
+    }
+
+    // Bind the session to the authenticated user: a valid token for a
+    // different user must not be able to drive someone else's MCP session.
+    const requesterId = (req as any).user?.userId;
+    if (session.userId && requesterId && session.userId !== requesterId) {
+      this.logger.error(`Session ownership mismatch for session: ${sessionId}`);
+      res.status(403).send("Forbidden");
       return;
     }
 

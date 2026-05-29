@@ -40,9 +40,13 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGO_URI') || configService.get<string>('MONGODB_URI') || 'mongodb://localhost:27017/vibe',
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const uri = configService.get<string>('MONGO_URI') || configService.get<string>('MONGODB_URI');
+        if (!uri) {
+          throw new Error('MONGO_URI/MONGODB_URI is not configured. Refusing to start.');
+        }
+        return { uri };
+      },
       inject: [ConfigService],
     }),
     AuthModule,
