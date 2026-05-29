@@ -5,7 +5,7 @@ export class InviteDto {
   email: string;
 
   @IsOptional()
-  @IsIn(['editor', 'viewer'])
+  @IsIn(['admin', 'editor', 'viewer'])
   role?: string;
 }
 
@@ -13,6 +13,6 @@ export class SetRoleDto {
   @IsEmail()
   email: string;
 
-  @IsIn(['editor', 'viewer'])
+  @IsIn(['admin', 'editor', 'viewer'])
   role: string;
 }

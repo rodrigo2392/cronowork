@@ -34,7 +34,7 @@ export class ProjectsController {
     @Body() body: InviteDto,
     @Req() req: any
   ) {
-    return this.projectsService.inviteUser(id, req.user.userId, body.email, body.role);
+    return this.projectsService.inviteUser(id, req.user.userId, body.email, body.role, req.user.email);
   }
 
   @Put(':id/members/role')
@@ -43,7 +43,7 @@ export class ProjectsController {
     @Body() body: SetRoleDto,
     @Req() req: any
   ) {
-    return this.projectsService.setMemberRole(id, req.user.userId, body.email, body.role);
+    return this.projectsService.setMemberRole(id, req.user.userId, body.email, body.role, req.user.email);
   }
 
   @Delete(':id')

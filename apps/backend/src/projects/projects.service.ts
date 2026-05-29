@@ -116,12 +116,21 @@ export class ProjectsService {
     await this.projectModel.deleteOne({ id, userId }).exec();
   }
 
-  async inviteUser(projectId: string, ownerId: string, targetEmail: string, role: string = 'editor'): Promise<Project> {
-    const safeRole = role === 'viewer' ? 'viewer' : 'editor';
+  private static readonly VALID_ROLES = ['admin', 'editor', 'viewer'];
+  private static normalizeRole(role: string): string {
+    return ProjectsService.VALID_ROLES.includes(role) ? role : 'editor';
+  }
+  // The owner, or a member with the 'admin' role, may manage members/roles.
+  private static canManageMembers(project: any, requesterId: string, requesterEmail: string): boolean {
+    return project.userId === requesterId || project.roles?.[requesterEmail] === 'admin';
+  }
+
+  async inviteUser(projectId: string, requesterId: string, targetEmail: string, role: string = 'editor', requesterEmail: string = ''): Promise<Project> {
+    const safeRole = ProjectsService.normalizeRole(role);
     const project = await this.projectModel.findOne({ id: projectId }).exec();
     if (!project) throw new NotFoundException('Project not found');
-    if (project.userId !== ownerId) {
-      throw new ForbiddenException('Only the project owner can invite users');
+    if (!ProjectsService.canManageMembers(project, requesterId, requesterEmail)) {
+      throw new ForbiddenException('Only the project owner or an admin can invite users');
     }
 
     const targetUser = await this.usersService.findByEmail(targetEmail);
@@ -158,13 +167,13 @@ export class ProjectsService {
     return project.save();
   }
 
-  // Owner-only: change a member's access role ('editor' | 'viewer').
-  async setMemberRole(projectId: string, ownerId: string, targetEmail: string, role: string): Promise<Project> {
-    const safeRole = role === 'viewer' ? 'viewer' : 'editor';
+  // Owner or admin: change a member's access role ('admin' | 'editor' | 'viewer').
+  async setMemberRole(projectId: string, requesterId: string, targetEmail: string, role: string, requesterEmail: string = ''): Promise<Project> {
+    const safeRole = ProjectsService.normalizeRole(role);
     const project = await this.projectModel.findOne({ id: projectId }).exec();
     if (!project) throw new NotFoundException('Project not found');
-    if (project.userId !== ownerId) {
-      throw new ForbiddenException('Only the project owner can change member roles');
+    if (!ProjectsService.canManageMembers(project, requesterId, requesterEmail)) {
+      throw new ForbiddenException('Only the project owner or an admin can change member roles');
     }
     if (!project.members || !project.members.includes(targetEmail)) {
       throw new BadRequestException('User is not a member of this project');

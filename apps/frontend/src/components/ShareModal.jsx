@@ -7,7 +7,7 @@ import * as Icons from 'lucide-react';
 import { APP_URL } from '../config';
 
 export default function ShareModal() {
-  const { isShareModalOpen, setIsShareModalOpen, activeProject, inviteMember, setMemberRole } = useBoard();
+  const { isShareModalOpen, setIsShareModalOpen, activeProject, inviteMember, setMemberRole, canManageMembers, allUsers } = useBoard();
   const { user } = useAuth();
   const { t } = useTranslation();
 
@@ -21,6 +21,13 @@ export default function ShareModal() {
 
   const isOwner = activeProject.userId === user?.id;
   const roles = activeProject.roles || {};
+  const ownerUser = (allUsers || []).find((u) => u._id === activeProject.userId);
+  const roleLabel = (r) =>
+    r === 'admin'
+      ? (t('modal.share.role_admin') || 'Administrador')
+      : r === 'viewer'
+        ? (t('modal.share.role_viewer') || 'Lector')
+        : (t('modal.share.role_editor') || 'Editor');
 
   const handleRoleChange = async (email, role) => {
     try {
@@ -138,8 +145,8 @@ export default function ShareModal() {
           </div>
 
           <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Invite Input (owner only) */}
-            {isOwner && (
+            {/* Invite Input (owner/admin only) */}
+            {canManageMembers && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
                 {t('modal.share.email_label') || "Email address"}
@@ -179,6 +186,7 @@ export default function ShareModal() {
                     cursor: 'pointer',
                   }}
                 >
+                  <option value="admin">{t('modal.share.role_admin') || 'Administrador'}</option>
                   <option value="editor">{t('modal.share.role_editor') || 'Editor'}</option>
                   <option value="viewer">{t('modal.share.role_viewer') || 'Lector'}</option>
                 </select>
@@ -224,15 +232,15 @@ export default function ShareModal() {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', backgroundColor: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255, 255, 255, 0.03)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--accent-color)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 600 }}>
-                      {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                      {(ownerUser?.name || (isOwner ? user?.name : '') || 'U').charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>{user?.name || t('header.user')}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{user?.email || 'user@example.com'}</p>
+                      <p style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>{ownerUser?.name || (isOwner ? user?.name : null) || t('header.user')}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{ownerUser?.email || (isOwner ? user?.email : '')}</p>
                     </div>
                   </div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: '99px' }}>
-                    {t('modal.share.owner') || "Owner (You)"}
+                    {isOwner ? (t('modal.share.owner') || "Propietario (Tú)") : (t('modal.share.owner_role') || "Propietario")}
                   </span>
                 </div>
 
@@ -248,7 +256,7 @@ export default function ShareModal() {
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{email}</p>
                       </div>
                     </div>
-                    {isOwner ? (
+                    {canManageMembers ? (
                       <select
                         value={roles[email] || 'editor'}
                         onChange={(e) => handleRoleChange(email, e.target.value)}
@@ -263,14 +271,13 @@ export default function ShareModal() {
                           cursor: 'pointer',
                         }}
                       >
+                        <option value="admin">{t('modal.share.role_admin') || 'Administrador'}</option>
                         <option value="editor">{t('modal.share.role_editor') || 'Editor'}</option>
                         <option value="viewer">{t('modal.share.role_viewer') || 'Lector'}</option>
                       </select>
                     ) : (
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        {(roles[email] || 'editor') === 'viewer'
-                          ? (t('modal.share.role_viewer') || 'Lector')
-                          : (t('modal.share.role_editor') || 'Editor')}
+                        {roleLabel(roles[email] || 'editor')}
                       </span>
                     )}
                   </div>

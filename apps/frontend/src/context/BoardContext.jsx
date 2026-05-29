@@ -277,6 +277,8 @@ export const BoardProvider = ({ children }) => {
         ? 'owner'
         : ((activeProject.roles && activeProject.roles[user.email]) || 'editor'));
   const isReadOnly = myRole === 'viewer';
+  // Owner and admins can manage members/roles; only the owner can delete.
+  const canManageMembers = myRole === 'owner' || myRole === 'admin';
 
   const saveTimeoutRef = useRef(null);
 
@@ -1068,6 +1070,7 @@ export const BoardProvider = ({ children }) => {
         activeDoneColumnId: resolveDoneColumnId(activeProject),
         myRole,
         isReadOnly,
+        canManageMembers,
         setMemberRole,
       }}
     >
