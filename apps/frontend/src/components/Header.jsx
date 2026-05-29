@@ -344,7 +344,6 @@ export default function Header() {
                     >
                       {[
                         { icon: Icons.Edit3, label: t("header.edit_project"), onClick: handleEditProject, color: "var(--text-primary)" },
-                        { icon: Icons.Bot, label: "Conectar Agente MCP", onClick: () => setIsMcpModalOpen(true), color: "var(--accent-color)" },
                         { icon: Icons.Settings, label: "Ajustes del Proyecto", onClick: () => setIsProjectSettingsModalOpen(true), color: "var(--text-primary)" },
                       ].map((item, i) => {
                         const Icon = item.icon;
@@ -407,29 +406,6 @@ export default function Header() {
               title={t("header.edit_project")}
             >
               <Icons.Edit3 size={18} />
-            </button>
-            <button
-              onClick={() => setIsMcpModalOpen(true)}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--accent-color)",
-                cursor: "pointer",
-                padding: "8px",
-                borderRadius: "6px",
-                display: "flex",
-                alignItems: "center",
-                transition: "all var(--transition-fast)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-              }}
-              title="Conectar Agente MCP"
-            >
-              <Icons.Bot size={18} />
             </button>
             <button
               onClick={() => setIsProjectSettingsModalOpen(true)}
@@ -574,7 +550,30 @@ export default function Header() {
             {!isMobile && <span>{t("header.share") || "Compartir"}</span>}
           </button>
 
-          {/* Avatar Dropdown */}
+          {/* MCP Connect (next to notifications) */}
+          <button
+            onClick={() => setIsMcpModalOpen(true)}
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              backgroundColor: "var(--bg-tertiary)",
+              color: "var(--accent-color)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "none",
+              cursor: "pointer",
+              transition: "transform 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            title="Conectar Agente MCP"
+          >
+            <Icons.Bot size={20} />
+          </button>
+
+          {/* Notifications Dropdown */}
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setShowNotifPopover(!showNotifPopover)}
