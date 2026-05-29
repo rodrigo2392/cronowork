@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
 import { Request, Response } from "express";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
@@ -30,8 +31,28 @@ export class McpService {
   constructor(
     private projectsService: ProjectsService,
     private notificationsService: NotificationsService,
-    private usersService: UsersService
+    private usersService: UsersService,
+    private jwtService: JwtService,
   ) {}
+
+  // Authenticate an MCP request. Prefers the Authorization: Bearer header;
+  // falls back to a ?token= query param for SSE clients that can't send headers.
+  private authenticate(req: Request): { userId: string; email: string } | null {
+    let token: string | undefined;
+    const authHeader = (req.headers['authorization'] || (req.headers as any)['Authorization']) as string | undefined;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.slice(7).trim();
+    } else if (req.query.token) {
+      token = req.query.token as string;
+    }
+    if (!token) return null;
+    try {
+      const payload: any = this.jwtService.verify(token);
+      return { userId: payload.sub, email: payload.email };
+    } catch {
+      return null;
+    }
+  }
 
   private registerTools(server: Server, user: any) {
     server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -489,9 +510,17 @@ export class McpService {
   async handleSse(req: Request, res: Response) {
     this.logger.log("New MCP SSE connection establishing...");
 
+    const user = this.authenticate(req);
+    if (!user) {
+      res.status(401).send("Unauthorized");
+      return;
+    }
+
     const appUrl = process.env.APP_URL ?? 'https://cronowork.app';
     const baseUrl = appUrl.replace(/\/+$/, '') + '/api/mcp/messages';
 
+    // Only echo the token into the messages URL when it arrived via query param
+    // (header-based clients keep the token out of the URL entirely).
     const token = req.query.token as string;
     const endpoint = token ? `${baseUrl}?token=${token}` : baseUrl;
 
@@ -516,7 +545,6 @@ export class McpService {
       { capabilities: { tools: {} } },
     );
 
-    const user = (req as any).user || {};
     this.registerTools(server, user);
     await server.connect(transport);
 
@@ -544,6 +572,12 @@ export class McpService {
       return;
     }
 
+    const user = this.authenticate(req);
+    if (!user) {
+      res.status(401).send("Unauthorized");
+      return;
+    }
+
     const session = this.sessions.get(sessionId);
     if (!session) {
       this.logger.error(`Session not found: ${sessionId}. Active sessions: ${[...this.sessions.keys()].join(', ')}`);
@@ -553,8 +587,7 @@ export class McpService {
 
     // Bind the session to the authenticated user: a valid token for a
     // different user must not be able to drive someone else's MCP session.
-    const requesterId = (req as any).user?.userId;
-    if (session.userId && requesterId && session.userId !== requesterId) {
+    if (session.userId && session.userId !== user.userId) {
       this.logger.error(`Session ownership mismatch for session: ${sessionId}`);
       res.status(403).send("Forbidden");
       return;

@@ -187,11 +187,20 @@ export default function McpTokenModal() {
             <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--accent-color)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Icons.Info size={16} /> Instrucciones de conexión
             </h4>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>
-              Configura tu cliente MCP para usar esta URL de servidor SSE: <br/>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, lineHeight: 1.6 }}>
+              1. Configura tu cliente MCP con esta URL de servidor SSE:
               <code style={{ background: 'var(--bg-primary)', padding: '2px 6px', borderRadius: '4px', color: 'var(--text-primary)', marginTop: '6px', display: 'inline-block', wordBreak: 'break-all' }}>
-                {`${API_URL}/mcp/sse?token=PEGA_AQUÍ_TU_TOKEN`}
+                {`${API_URL}/mcp/sse`}
               </code>
+              <br /><br />
+              2. <strong style={{ color: 'var(--text-primary)' }}>Autenticación (recomendado):</strong> envía tu token JWT en el header HTTP:
+              <code style={{ background: 'var(--bg-primary)', padding: '2px 6px', borderRadius: '4px', color: 'var(--text-primary)', marginTop: '6px', display: 'inline-block', wordBreak: 'break-all' }}>
+                {`Authorization: Bearer <TU_TOKEN>`}
+              </code>
+              <br /><br />
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                Alternativa (menos seguro): si tu cliente no permite enviar headers, puedes añadir el token a la URL como <code style={{ background: 'var(--bg-primary)', padding: '1px 4px', borderRadius: '4px' }}>?token=TU_TOKEN</code>. No se recomienda porque el token queda registrado en los logs del servidor.
+              </span>
             </p>
           </div>
 

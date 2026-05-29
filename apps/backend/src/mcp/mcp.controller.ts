@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { McpService } from './mcp.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@UseGuards(JwtAuthGuard)
+// No guard here: MCP authenticates manually (header preferred, ?token= fallback)
+// because the SSE transport often can't send an Authorization header.
 @Controller('mcp')
 export class McpController {
   constructor(private readonly mcpService: McpService) {}
