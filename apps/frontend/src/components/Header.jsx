@@ -271,11 +271,11 @@ export default function Header() {
           flexDirection: isMobile ? "column" : "row",
           justifyContent: "space-between",
           alignItems: isMobile ? "stretch" : "flex-start",
-          flexWrap: isMobile ? "nowrap" : "wrap",
+          flexWrap: "nowrap",
           gap: "16px",
         }}
       >
-        <div style={{ order: isMobile ? 2 : 0, minWidth: 0, maxWidth: "100%" }}>
+        <div style={{ order: isMobile ? 2 : 0, flex: isMobile ? "0 0 auto" : "1 1 auto", minWidth: 0, maxWidth: "100%" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap", minWidth: 0 }}>
             <h1
               style={{
@@ -442,14 +442,19 @@ export default function Header() {
               marginTop: "4px",
               maxWidth: "600px",
               lineHeight: "1.4",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}
+            title={activeProject.description}
           >
             {activeProject.description}
           </p>
         </div>
 
         {/* Global actions (Tracker, Share & Avatar). On mobile this is the top app bar. */}
-        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "8px" : "16px", position: "relative", flexWrap: "wrap", order: isMobile ? 1 : 0, width: isMobile ? "100%" : "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "8px" : "16px", position: "relative", flexWrap: "wrap", order: isMobile ? 1 : 0, width: isMobile ? "100%" : "auto", flexShrink: 0 }}>
 
           {isMobile && (
             <button
