@@ -528,31 +528,24 @@ export default function Header() {
 
           <button
             onClick={handleShare}
+            title={t("header.share") || "Compartir"}
             style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              backgroundColor: "var(--bg-tertiary)",
+              color: "var(--text-primary)",
               display: "flex",
               alignItems: "center",
-              gap: "6px",
-              padding: isMobile ? "10px" : "10px 16px",
-              backgroundColor: "rgba(99, 102, 241, 0.1)",
-              border: "1px solid rgba(99, 102, 241, 0.2)",
-              borderRadius: "var(--radius-md)",
-              color: "var(--accent-color)",
-              fontSize: "0.95rem",
-              fontWeight: 500,
+              justifyContent: "center",
+              border: "none",
               cursor: "pointer",
-              transition: "all var(--transition-fast)",
+              transition: "transform 0.2s",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "var(--accent-color)";
-              e.currentTarget.style.color = "#ffffff";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
-              e.currentTarget.style.color = "var(--accent-color)";
-            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
-            <Icons.Share2 size={18} />
-            {!isMobile && <span>{t("header.share") || "Compartir"}</span>}
+            <Icons.Share2 size={20} />
           </button>
 
           {/* MCP Connect (next to notifications) */}
