@@ -37,6 +37,15 @@ export class Project extends Document {
   @Prop({ type: [String], default: [] })
   columnOrder: string[];
 
+  // Column that represents "completed" (drives progress %, time-tracker stop,
+  // and auto-archive). Falls back to the last column when unset.
+  @Prop()
+  doneColumnId: string;
+
+  // Days a task can sit in the done column before auto-archiving.
+  @Prop({ default: 7 })
+  autoArchiveDays: number;
+
   @Prop({ type: [MongooseSchema.Types.Mixed], default: [] })
   activityLog: any[];
 }

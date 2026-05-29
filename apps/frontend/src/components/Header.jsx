@@ -38,7 +38,8 @@ export default function Header() {
     setIsProjectSettingsModalOpen,
     setIsMcpModalOpen,
     isSidebarCollapsed,
-    setIsSidebarCollapsed
+    setIsSidebarCollapsed,
+    activeDoneColumnId
   } = useBoard();
 
   const [newColTitle, setNewColTitle] = useState("");
@@ -183,7 +184,7 @@ export default function Header() {
   // Calculate project progress
   const totalTasks = Object.keys(activeProject.tasks || {}).length;
   const lastColId =
-    activeProject.columnOrder[activeProject.columnOrder.length - 1];
+    activeDoneColumnId || activeProject.columnOrder[activeProject.columnOrder.length - 1];
   const doneTasks = lastColId
     ? activeProject.columns[lastColId]?.taskIds.length || 0
     : 0;

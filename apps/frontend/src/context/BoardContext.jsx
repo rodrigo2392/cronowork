@@ -4,6 +4,16 @@ import { useTranslation } from './LanguageContext';
 import { useSocket } from './SocketContext';
 import { API_URL } from '../config';
 
+// Resolves a project's "completed" column: the explicit doneColumnId when it
+// still points to a real column, otherwise the last column in columnOrder.
+export const resolveDoneColumnId = (project) => {
+  if (!project || !project.columnOrder || project.columnOrder.length === 0) return null;
+  if (project.doneColumnId && project.columns && project.columns[project.doneColumnId]) {
+    return project.doneColumnId;
+  }
+  return project.columnOrder[project.columnOrder.length - 1];
+};
+
 const BoardContext = createContext(undefined);
 
 export const useBoard = () => {
@@ -686,8 +696,8 @@ export const BoardProvider = ({ children }) => {
     const task = activeProject.tasks[taskId];
     if (!task) return;
 
-    // Restore to the last column by default
-    const destColumnId = activeProject.columnOrder[activeProject.columnOrder.length - 1];
+    // Restore to the completed column by default
+    const destColumnId = resolveDoneColumnId(activeProject);
 
     const updatedTask = { ...task };
     delete updatedTask.archived;
@@ -716,7 +726,7 @@ export const BoardProvider = ({ children }) => {
   useEffect(() => {
     if (!activeProject || !activeProject.columnOrder.length) return;
 
-    const lastColumnId = activeProject.columnOrder[activeProject.columnOrder.length - 1];
+    const lastColumnId = resolveDoneColumnId(activeProject);
     const lastColumn = activeProject.columns[lastColumnId];
     if (!lastColumn || !lastColumn.taskIds.length) return;
 
@@ -862,7 +872,7 @@ export const BoardProvider = ({ children }) => {
         // The activity log will be created separately
       }
 
-      const isLastColumn = destCol.id === activeProject.columnOrder[activeProject.columnOrder.length - 1];
+      const isLastColumn = destCol.id === resolveDoneColumnId(activeProject);
       if (isLastColumn) {
         updatedTaskData.movedToDoneAt = new Date().toISOString();
         if (activeTracker && activeTracker.taskId === draggableId) {
@@ -1020,6 +1030,8 @@ export const BoardProvider = ({ children }) => {
         
         archiveTask,
         unarchiveTask,
+
+        activeDoneColumnId: resolveDoneColumnId(activeProject),
       }}
     >
       {children}

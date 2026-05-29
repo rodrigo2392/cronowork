@@ -1,31 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useBoard } from '../context/BoardContext';
+import { useBoard, resolveDoneColumnId } from '../context/BoardContext';
 import * as Icons from 'lucide-react';
 
 export default function ProjectSettingsModal() {
-  const { 
-    isProjectSettingsModalOpen, 
+  const {
+    isProjectSettingsModalOpen,
     setIsProjectSettingsModalOpen,
     activeProject,
     updateProjectState
   } = useBoard();
 
   const [autoArchiveDays, setAutoArchiveDays] = useState(7);
+  const [doneColumnId, setDoneColumnId] = useState('');
 
   useEffect(() => {
     if (activeProject) {
       setAutoArchiveDays(activeProject.autoArchiveDays || 7);
+      setDoneColumnId(resolveDoneColumnId(activeProject) || '');
     }
   }, [activeProject, isProjectSettingsModalOpen]);
 
   if (!isProjectSettingsModalOpen || !activeProject) return null;
 
+  const columnOrder = activeProject.columnOrder || [];
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const updatedProject = {
       ...activeProject,
-      autoArchiveDays: Number(autoArchiveDays)
+      autoArchiveDays: Number(autoArchiveDays),
+      doneColumnId: doneColumnId || undefined,
     };
     updateProjectState(updatedProject);
     setIsProjectSettingsModalOpen(false);
@@ -65,10 +70,35 @@ export default function ProjectSettingsModal() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 500 }}>
+              Columna de completado
+            </label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
+              Define qué columna representa las tareas terminadas. Determina el progreso del proyecto, detiene el cronómetro y dispara el auto-archivado.
+            </p>
+            <select
+              value={doneColumnId}
+              onChange={(e) => setDoneColumnId(e.target.value)}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)', outline: 'none', fontSize: '0.95rem',
+                cursor: 'pointer'
+              }}
+            >
+              {columnOrder.map((colId) => (
+                <option key={colId} value={colId}>
+                  {activeProject.columns?.[colId]?.title || colId}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 500 }}>
               Auto-archivar tareas finalizadas
             </label>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
-              Las tareas que lleven este tiempo en la última columna del tablero se moverán automáticamente al archivo para mantener tu espacio de trabajo limpio.
+              Las tareas que lleven este tiempo en la columna de completado se moverán automáticamente al archivo para mantener tu espacio de trabajo limpio.
             </p>
             <select
               value={autoArchiveDays}
