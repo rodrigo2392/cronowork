@@ -29,6 +29,10 @@ export default function Column({ column, index }) {
     .map((id) => activeProject.tasks[id])
     .filter(Boolean);
 
+  // WIP limit (0 = no limit)
+  const wipLimit = Number(column.wipLimit) || 0;
+  const overWip = wipLimit > 0 && tasks.length >= wipLimit;
+
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
       searchQuery.trim() === '' ||
@@ -144,16 +148,17 @@ export default function Column({ column, index }) {
               )}
 
               <span
+                title={wipLimit > 0 ? `Límite WIP: ${wipLimit}` : undefined}
                 style={{
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-secondary)',
+                  backgroundColor: overWip ? 'rgba(239, 68, 68, 0.15)' : 'var(--bg-tertiary)',
+                  color: overWip ? 'var(--priority-high)' : 'var(--text-secondary)',
                   padding: '2px 8px',
                   borderRadius: '9999px',
                 }}
               >
-                {filteredTasks.length}
+                {wipLimit > 0 ? `${tasks.length}/${wipLimit}` : filteredTasks.length}
               </span>
             </div>
 

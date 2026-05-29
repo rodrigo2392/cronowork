@@ -873,6 +873,12 @@ export const BoardProvider = ({ children }) => {
       };
       updateProjectState(updated);
     } else {
+      // WIP limit: block moving a task into a column that is already at its limit.
+      const destWip = Number(destCol.wipLimit) || 0;
+      if (destWip > 0 && (destCol.taskIds?.length || 0) >= destWip) {
+        return;
+      }
+
       // Moving to different column
       const sourceTaskIds = Array.from(sourceCol.taskIds);
       sourceTaskIds.splice(source.index, 1);

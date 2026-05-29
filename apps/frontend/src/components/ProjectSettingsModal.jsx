@@ -25,6 +25,7 @@ export default function ProjectSettingsModal() {
   const [defaultAssignee, setDefaultAssignee] = useState('');
   const [autoStartTimer, setAutoStartTimer] = useState(true);
   const [aiEnabled, setAiEnabled] = useState(true);
+  const [wipLimits, setWipLimits] = useState({});
   const [notifySettings, setNotifySettings] = useState({ muted: false, assign: true, mention: true });
 
   useEffect(() => {
@@ -38,6 +39,11 @@ export default function ProjectSettingsModal() {
       setDefaultAssignee(activeProject.defaultAssignee || '');
       setAutoStartTimer(activeProject.autoStartTimer !== false);
       setAiEnabled(activeProject.aiEnabled !== false);
+      const wl = {};
+      (activeProject.columnOrder || []).forEach((colId) => {
+        wl[colId] = activeProject.columns?.[colId]?.wipLimit || 0;
+      });
+      setWipLimits(wl);
       const ns = activeProject.notifySettings || {};
       setNotifySettings({
         muted: !!ns.muted,
@@ -64,8 +70,16 @@ export default function ProjectSettingsModal() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const defaultTags = defaultTagsInput.split(',').map((tg) => tg.trim()).filter(Boolean);
+    // Merge WIP limits into the columns object (preserving taskIds/title).
+    const updatedColumns = { ...activeProject.columns };
+    (activeProject.columnOrder || []).forEach((colId) => {
+      if (updatedColumns[colId]) {
+        updatedColumns[colId] = { ...updatedColumns[colId], wipLimit: Number(wipLimits[colId]) || 0 };
+      }
+    });
     const updatedProject = {
       ...activeProject,
+      columns: updatedColumns,
       autoArchiveDays: Number(autoArchiveDays),
       autoArchiveEnabled,
       autoDeleteArchivedDays: Number(autoDeleteArchivedDays) || 0,
@@ -269,6 +283,35 @@ export default function ProjectSettingsModal() {
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {switchRow(autoStartTimer, setAutoStartTimer, 'Auto-iniciar al pasar a "En progreso"', 'Inicia el cronómetro automáticamente al mover una tarea a una columna de progreso.')}
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: 500 }}>
+              Límites WIP por columna
+            </label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.4' }}>
+              Máximo de tareas por columna. 0 = sin límite. Impide mover tareas a una columna que ya alcanzó su límite.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {columnOrder.map((colId) => (
+                <div key={colId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {activeProject.columns?.[colId]?.title || colId}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={wipLimits[colId] ?? 0}
+                    onChange={(e) => setWipLimits((prev) => ({ ...prev, [colId]: e.target.value }))}
+                    style={{
+                      width: '80px', padding: '8px 10px', borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)', outline: 'none', fontSize: '0.9rem',
+                    }}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
