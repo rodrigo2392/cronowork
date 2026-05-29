@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { InviteDto, SetRoleDto } from './dto/member.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('projects')
@@ -29,11 +30,20 @@ export class ProjectsController {
 
   @Post(':id/invite')
   async inviteUser(
-    @Param('id') id: string, 
-    @Body('email') email: string, 
+    @Param('id') id: string,
+    @Body() body: InviteDto,
     @Req() req: any
   ) {
-    return this.projectsService.inviteUser(id, req.user.userId, email);
+    return this.projectsService.inviteUser(id, req.user.userId, body.email, body.role);
+  }
+
+  @Put(':id/members/role')
+  async setMemberRole(
+    @Param('id') id: string,
+    @Body() body: SetRoleDto,
+    @Req() req: any
+  ) {
+    return this.projectsService.setMemberRole(id, req.user.userId, body.email, body.role);
   }
 
   @Delete(':id')

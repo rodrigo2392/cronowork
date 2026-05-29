@@ -39,7 +39,8 @@ export default function Header() {
     setIsMcpModalOpen,
     isSidebarCollapsed,
     setIsSidebarCollapsed,
-    activeDoneColumnId
+    activeDoneColumnId,
+    isReadOnly
   } = useBoard();
 
   const [newColTitle, setNewColTitle] = useState("");
@@ -604,6 +605,26 @@ export default function Header() {
             </div>
           )}
 
+          {isReadOnly && (
+            <span
+              title="Tienes acceso de solo lectura a este proyecto"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 12px",
+                borderRadius: "var(--radius-md)",
+                backgroundColor: "var(--bg-tertiary)",
+                color: "var(--text-secondary)",
+                fontSize: "0.8rem",
+                fontWeight: 500,
+              }}
+            >
+              <Icons.Eye size={15} />
+              {!isMobile && <span>{t("header.read_only") || "Solo lectura"}</span>}
+            </span>
+          )}
+
           <button
             onClick={handleShare}
             style={{
@@ -1123,7 +1144,7 @@ export default function Header() {
               </select>
 
               {/* AI Task Generator Button */}
-              {aiConfigured && (
+              {aiConfigured && !isReadOnly && (
                 <button
                   onClick={() => setIsAiModalOpen(true)}
                   style={{
@@ -1160,7 +1181,7 @@ export default function Header() {
               )}
 
               {/* Add Column Button */}
-              {showAddCol ? (
+              {!isReadOnly && (showAddCol ? (
                 <form
                   onSubmit={handleAddColumnSubmit}
                   style={{
@@ -1250,7 +1271,7 @@ export default function Header() {
                   <Icons.Plus size={18} />
                   <span>{t("header.add_col_btn")}</span>
                 </button>
-              )}
+              ))}
             </div>
           </div>
         )}

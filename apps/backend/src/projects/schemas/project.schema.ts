@@ -12,6 +12,11 @@ export class Project extends Document {
   @Prop({ type: [String], default: [] })
   members: string[];
 
+  // Per-member access role, keyed by email: 'editor' | 'viewer'.
+  // Owner is always full-access; a member with no entry defaults to 'editor'.
+  @Prop({ type: MongooseSchema.Types.Mixed, default: {} })
+  roles: Record<string, string>;
+
   @Prop({ required: true, unique: true })
   id: string;
 

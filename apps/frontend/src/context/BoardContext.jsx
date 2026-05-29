@@ -269,10 +269,20 @@ export const BoardProvider = ({ children }) => {
 
   const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
 
+  // Current user's access role on the active project: 'owner' | 'editor' | 'viewer'.
+  // Owner is implicit; members default to 'editor' when they have no explicit role.
+  const myRole = (!activeProject || !user)
+    ? 'editor'
+    : (activeProject.userId === user.id
+        ? 'owner'
+        : ((activeProject.roles && activeProject.roles[user.email]) || 'editor'));
+  const isReadOnly = myRole === 'viewer';
+
   const saveTimeoutRef = useRef(null);
 
   // Update specific project in projects array and sync to backend
   const updateProjectState = (updatedProject) => {
+    if (isReadOnly) return; // Read-only members cannot mutate the project
     setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
     
     // Debounce the backend save to prevent spamming during rapid edits or drags
@@ -417,22 +427,22 @@ export const BoardProvider = ({ children }) => {
     }
   };
 
-  const inviteMember = async (projectId, email) => {
+  const inviteMember = async (projectId, email, role = 'editor') => {
     const proj = projects.find(p => p.id === projectId);
     if (!proj) throw new Error("Project not found");
     const currentMembers = proj.members || [];
     if (currentMembers.includes(email)) throw new Error("already_member");
-    
+
     if (token) {
       const response = await fetch(`${API_URL}/projects/${projectId}/invite`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, role })
       });
-      
+
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         const msg = errData.message || '';
@@ -443,7 +453,7 @@ export const BoardProvider = ({ children }) => {
         }
         throw new Error("generic");
       }
-      
+
       const updatedProject = await response.json();
       setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
       logActivity(projectId, `Invited ${email} to project`);
@@ -451,11 +461,28 @@ export const BoardProvider = ({ children }) => {
       // Local fallback
       const updated = {
         ...proj,
-        members: [...currentMembers, email]
+        members: [...currentMembers, email],
+        roles: { ...(proj.roles || {}), [email]: role === 'viewer' ? 'viewer' : 'editor' }
       };
       updateProjectState(updated);
       logActivity(projectId, `Invited ${email} to project (Local)`);
     }
+  };
+
+  // Owner-only: change a member's access role ('editor' | 'viewer').
+  const setMemberRole = async (projectId, email, role) => {
+    if (!token) return;
+    const response = await fetch(`${API_URL}/projects/${projectId}/members/role`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ email, role })
+    });
+    if (!response.ok) throw new Error("generic");
+    const updatedProject = await response.json();
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
   };
 
   // --- Column CRUD ---
@@ -787,6 +814,7 @@ export const BoardProvider = ({ children }) => {
 
   // --- Drag and Drop Movement Handler ---
   const handleDragEnd = (result) => {
+    if (isReadOnly) return; // Read-only members cannot move tasks/columns
     const { destination, source, draggableId, type } = result;
 
     if (!destination) return;
@@ -1032,6 +1060,9 @@ export const BoardProvider = ({ children }) => {
         unarchiveTask,
 
         activeDoneColumnId: resolveDoneColumnId(activeProject),
+        myRole,
+        isReadOnly,
+        setMemberRole,
       }}
     >
       {children}

@@ -7,16 +7,28 @@ import * as Icons from 'lucide-react';
 import { APP_URL } from '../config';
 
 export default function ShareModal() {
-  const { isShareModalOpen, setIsShareModalOpen, activeProject, inviteMember } = useBoard();
+  const { isShareModalOpen, setIsShareModalOpen, activeProject, inviteMember, setMemberRole } = useBoard();
   const { user } = useAuth();
   const { t } = useTranslation();
 
   const [emailInput, setEmailInput] = useState('');
+  const [inviteRole, setInviteRole] = useState('editor');
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
   if (!isShareModalOpen || !activeProject) return null;
+
+  const isOwner = activeProject.userId === user?.id;
+  const roles = activeProject.roles || {};
+
+  const handleRoleChange = async (email, role) => {
+    try {
+      await setMemberRole(activeProject.id, email, role);
+    } catch (err) {
+      setErrorMsg(t("modal.share.error_generic") || "An error occurred");
+    }
+  };
 
   const handleInvite = async (e) => {
     e.preventDefault();
@@ -24,7 +36,7 @@ export default function ShareModal() {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      await inviteMember(activeProject.id, emailInput.trim());
+      await inviteMember(activeProject.id, emailInput.trim(), inviteRole);
       setEmailInput('');
     } catch (err) {
       if (err.message === "user_not_found") {
@@ -126,7 +138,8 @@ export default function ShareModal() {
           </div>
 
           <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Invite Input */}
+            {/* Invite Input (owner only) */}
+            {isOwner && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
                 {t('modal.share.email_label') || "Email address"}
@@ -152,6 +165,23 @@ export default function ShareModal() {
                     outline: 'none',
                   }}
                 />
+                <select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  style={{
+                    padding: '10px 8px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.85rem',
+                    outline: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="editor">{t('modal.share.role_editor') || 'Editor'}</option>
+                  <option value="viewer">{t('modal.share.role_viewer') || 'Lector'}</option>
+                </select>
                 <button
                   type="submit"
                   disabled={!emailInput.trim() || isLoading}
@@ -182,6 +212,7 @@ export default function ShareModal() {
                 </span>
               )}
             </div>
+            )}
 
             {/* Members List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -217,9 +248,31 @@ export default function ShareModal() {
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{email}</p>
                       </div>
                     </div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {t('modal.share.invited') || "Invited"}
-                    </span>
+                    {isOwner ? (
+                      <select
+                        value={roles[email] || 'editor'}
+                        onChange={(e) => handleRoleChange(email, e.target.value)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '99px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-tertiary)',
+                          color: 'var(--text-secondary)',
+                          fontSize: '0.75rem',
+                          outline: 'none',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <option value="editor">{t('modal.share.role_editor') || 'Editor'}</option>
+                        <option value="viewer">{t('modal.share.role_viewer') || 'Lector'}</option>
+                      </select>
+                    ) : (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {(roles[email] || 'editor') === 'viewer'
+                          ? (t('modal.share.role_viewer') || 'Lector')
+                          : (t('modal.share.role_editor') || 'Editor')}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

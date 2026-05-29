@@ -67,6 +67,12 @@ export class ProjectsService {
 
       project = new this.projectModel({ ...projectData, userId, id });
     } else {
+      // Read-only members (role 'viewer') cannot mutate the project.
+      const isOwner = project.userId === userId;
+      if (!isOwner && project.roles && project.roles[email] === 'viewer') {
+        throw new ForbiddenException('You have read-only access to this project');
+      }
+
       // Extract raw data if it's a mongoose document
       const rawData = typeof projectData.toObject === 'function' ? projectData.toObject() : projectData;
 
@@ -108,7 +114,8 @@ export class ProjectsService {
     await this.projectModel.deleteOne({ id, userId }).exec();
   }
 
-  async inviteUser(projectId: string, ownerId: string, targetEmail: string): Promise<Project> {
+  async inviteUser(projectId: string, ownerId: string, targetEmail: string, role: string = 'editor'): Promise<Project> {
+    const safeRole = role === 'viewer' ? 'viewer' : 'editor';
     const project = await this.projectModel.findOne({ id: projectId }).exec();
     if (!project) throw new NotFoundException('Project not found');
     if (project.userId !== ownerId) {
@@ -142,7 +149,36 @@ export class ProjectsService {
     } else if (!targetUser) {
       throw new BadRequestException('User is already invited to this project');
     }
-    
+
+    project.roles = { ...(project.roles || {}), [targetEmail]: safeRole };
+    project.markModified('roles');
+
     return project.save();
+  }
+
+  // Owner-only: change a member's access role ('editor' | 'viewer').
+  async setMemberRole(projectId: string, ownerId: string, targetEmail: string, role: string): Promise<Project> {
+    const safeRole = role === 'viewer' ? 'viewer' : 'editor';
+    const project = await this.projectModel.findOne({ id: projectId }).exec();
+    if (!project) throw new NotFoundException('Project not found');
+    if (project.userId !== ownerId) {
+      throw new ForbiddenException('Only the project owner can change member roles');
+    }
+    if (!project.members || !project.members.includes(targetEmail)) {
+      throw new BadRequestException('User is not a member of this project');
+    }
+
+    project.roles = { ...(project.roles || {}), [targetEmail]: safeRole };
+    project.markModified('roles');
+    const saved = await project.save();
+
+    // Notify the affected user (if registered) so their UI refreshes access.
+    const targetUser = await this.usersService.findByEmail(targetEmail);
+    if (targetUser) {
+      this.eventsGateway.emitToUser(targetUser._id.toString(), 'project_updated', { projectId: project.id });
+    }
+    this.eventsGateway.emitToUser(project.userId, 'project_updated', { projectId: project.id });
+
+    return saved;
   }
 }
