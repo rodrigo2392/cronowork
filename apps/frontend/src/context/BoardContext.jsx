@@ -302,14 +302,36 @@ export const BoardProvider = ({ children }) => {
     }, 1500);
   };
 
+  // Builds a single activity-log entry, reused for both optimistic local state
+  // and the server-side move payload so they stay consistent.
+  const makeActivity = (text) => ({
+    id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    text,
+    time: new Date().toISOString(),
+  });
+
+  // Optimistically updates local state and persists a *minimal* move to the
+  // backend (only affected columns/tasks/columnOrder), instead of re-sending
+  // the whole project. Avoids "request entity too large" on large boards.
+  const persistMove = (updatedProject, movePayload) => {
+    if (isReadOnly) return; // Read-only members cannot mutate the project
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+
+    if (!token) return;
+    fetch(`${API_URL}/projects/${updatedProject.id}/move`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(movePayload),
+    }).catch(err => console.error('Failed to sync move to backend:', err));
+  };
+
   // Activity Logger helper
   const logActivity = (projectId, text) => {
-    const newActivity = {
-      id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      text,
-      time: new Date().toISOString(),
-    };
-    
+    const newActivity = makeActivity(text);
+
     setProjects(prev => prev.map(p => {
       if (p.id === projectId) {
         return {
@@ -701,23 +723,32 @@ export const BoardProvider = ({ children }) => {
       };
     }
 
+    const archivedAt = new Date().toISOString();
     const updatedTask = {
       ...task,
       archived: true,
-      archivedAt: new Date().toISOString()
+      archivedAt
     };
 
+    const activity = makeActivity(`Archived task "${task.title}"`);
     const updatedProject = {
       ...activeProject,
       tasks: {
         ...activeProject.tasks,
         [taskId]: updatedTask
       },
-      columns: updatedColumns
+      columns: updatedColumns,
+      activityLog: [activity, ...(activeProject.activityLog || [])].slice(0, 50),
     };
 
-    updateProjectState(updatedProject);
-    logActivity(activeProject.id, `Archived task "${task.title}"`);
+    const movePayload = {
+      taskUpdates: { [taskId]: { archived: true, archivedAt } },
+      activity,
+    };
+    if (sourceColumnId && updatedColumns[sourceColumnId]) {
+      movePayload.columns = { [sourceColumnId]: updatedColumns[sourceColumnId].taskIds };
+    }
+    persistMove(updatedProject, movePayload);
   };
 
   const unarchiveTask = (taskId) => {
@@ -727,11 +758,15 @@ export const BoardProvider = ({ children }) => {
 
     // Restore to the completed column by default
     const destColumnId = resolveDoneColumnId(activeProject);
+    const destCol = activeProject.columns[destColumnId];
+    if (!destCol) return;
 
     const updatedTask = { ...task };
     delete updatedTask.archived;
     delete updatedTask.archivedAt;
 
+    const newDestTaskIds = [...destCol.taskIds, taskId];
+    const activity = makeActivity(`Unarchived task "${task.title}"`);
     const updatedProject = {
       ...activeProject,
       tasks: {
@@ -740,15 +775,16 @@ export const BoardProvider = ({ children }) => {
       },
       columns: {
         ...activeProject.columns,
-        [destColumnId]: {
-          ...activeProject.columns[destColumnId],
-          taskIds: [...activeProject.columns[destColumnId].taskIds, taskId]
-        }
-      }
+        [destColumnId]: { ...destCol, taskIds: newDestTaskIds }
+      },
+      activityLog: [activity, ...(activeProject.activityLog || [])].slice(0, 50),
     };
 
-    updateProjectState(updatedProject);
-    logActivity(activeProject.id, `Unarchived task "${task.title}"`);
+    persistMove(updatedProject, {
+      columns: { [destColumnId]: newDestTaskIds },
+      taskUpdates: { [taskId]: { archived: false, archivedAt: null } },
+      activity,
+    });
   };
 
   // --- Auto Archive / Auto Delete Logic ---
@@ -842,12 +878,13 @@ export const BoardProvider = ({ children }) => {
       newColumnOrder.splice(source.index, 1);
       newColumnOrder.splice(destination.index, 0, draggableId);
 
+      const activity = makeActivity(`Reordered columns`);
       const updated = {
         ...activeProject,
-        columnOrder: newColumnOrder
+        columnOrder: newColumnOrder,
+        activityLog: [activity, ...(activeProject.activityLog || [])].slice(0, 50),
       };
-      updateProjectState(updated);
-      logActivity(activeProject.id, `Reordered columns`);
+      persistMove(updated, { columnOrder: newColumnOrder, activity });
       return;
     }
 
@@ -873,7 +910,7 @@ export const BoardProvider = ({ children }) => {
           [sourceCol.id]: updatedCol
         }
       };
-      updateProjectState(updated);
+      persistMove(updated, { columns: { [sourceCol.id]: newTaskIds } });
     } else {
       // WIP limit: block moving a task into a column that is already at its limit.
       const destWip = Number(destCol.wipLimit) || 0;
@@ -884,7 +921,7 @@ export const BoardProvider = ({ children }) => {
       // Moving to different column
       const sourceTaskIds = Array.from(sourceCol.taskIds);
       sourceTaskIds.splice(source.index, 1);
-      
+
       const destTaskIds = Array.from(destCol.taskIds);
       destTaskIds.splice(destination.index, 0, draggableId);
 
@@ -898,19 +935,20 @@ export const BoardProvider = ({ children }) => {
         taskIds: destTaskIds
       };
 
-      const taskTitle = activeProject.tasks[draggableId]?.title || 'Task';
-      let updatedTaskData = { ...activeProject.tasks[draggableId] };
+      const original = activeProject.tasks[draggableId] || {};
+      const taskTitle = original.title || 'Task';
 
-      // Automations
+      // Build a *minimal* per-task patch — only the fields automations touch.
+      const taskPatch = {};
+
       const isFirstColumn = destCol.id === activeProject.columnOrder[0];
-      if (!isFirstColumn && !updatedTaskData.assignee && user?.email) {
-        updatedTaskData.assignee = user.email;
-        // The activity log will be created separately
+      if (!isFirstColumn && !original.assignee && user?.email) {
+        taskPatch.assignee = user.email;
       }
 
       const isLastColumn = destCol.id === resolveDoneColumnId(activeProject);
       if (isLastColumn) {
-        updatedTaskData.movedToDoneAt = new Date().toISOString();
+        taskPatch.movedToDoneAt = new Date().toISOString();
         if (activeTracker && activeTracker.taskId === draggableId) {
           const elapsedSeconds = Math.floor((Date.now() - activeTracker.startTime) / 1000);
           if (elapsedSeconds > 0) {
@@ -921,31 +959,19 @@ export const BoardProvider = ({ children }) => {
               duration: elapsedSeconds,
               createdAt: new Date().toISOString()
             };
-            updatedTaskData.timeLogs = [...(updatedTaskData.timeLogs || []), newLog];
+            taskPatch.timeLogs = [...(original.timeLogs || []), newLog];
           }
           setActiveTracker(null);
         }
       } else {
-        // If it was moved out of the last column, clear the timestamp
-        delete updatedTaskData.movedToDoneAt;
+        // If it was moved out of the last column, clear the timestamp.
+        taskPatch.movedToDoneAt = null;
       }
 
-      const updated = {
-        ...activeProject,
-        tasks: {
-          ...activeProject.tasks,
-          [draggableId]: updatedTaskData
-        },
-        columns: {
-          ...activeProject.columns,
-          [sourceCol.id]: updatedSourceCol,
-          [destCol.id]: updatedDestCol
-        }
-      };
-      updateProjectState(updated);
-      
+      const updatedTaskData = { ...original, ...taskPatch };
+
       let activityMsg = `Moved "${taskTitle}" from "${sourceCol.title}" to "${destCol.title}"`;
-      if (!isFirstColumn && updatedTaskData.assignee === user?.email && !activeProject.tasks[draggableId]?.assignee) {
+      if (!isFirstColumn && taskPatch.assignee === user?.email && !original.assignee) {
         activityMsg += ` and auto-assigned`;
       }
       if (isLastColumn && activeTracker && activeTracker.taskId === draggableId) {
@@ -963,7 +989,29 @@ export const BoardProvider = ({ children }) => {
         activityMsg += ` (timer auto-started)`;
       }
 
-      logActivity(activeProject.id, activityMsg);
+      const activity = makeActivity(activityMsg);
+      const updated = {
+        ...activeProject,
+        tasks: {
+          ...activeProject.tasks,
+          [draggableId]: updatedTaskData
+        },
+        columns: {
+          ...activeProject.columns,
+          [sourceCol.id]: updatedSourceCol,
+          [destCol.id]: updatedDestCol
+        },
+        activityLog: [activity, ...(activeProject.activityLog || [])].slice(0, 50),
+      };
+
+      persistMove(updated, {
+        columns: {
+          [sourceCol.id]: sourceTaskIds,
+          [destCol.id]: destTaskIds,
+        },
+        taskUpdates: { [draggableId]: taskPatch },
+        activity,
+      });
     }
   };
 

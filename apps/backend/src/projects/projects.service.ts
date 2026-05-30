@@ -105,6 +105,64 @@ export class ProjectsService {
     return updatedProject;
   }
 
+  // Applies a minimal drag/drop move without re-sending the whole project.
+  // Only the affected columns' taskIds, an optional new columnOrder, partial
+  // task field updates, and an optional activity entry are touched.
+  async applyMove(id: string, userId: string, email: string, move: any): Promise<{ ok: true }> {
+    const or = this.accessOr(userId, email);
+    if (or.length === 0) throw new ForbiddenException('Access denied');
+
+    const project = await this.projectModel.findOne({ id, $or: or }).exec();
+    if (!project) throw new NotFoundException(`Project with ID ${id} not found`);
+
+    // Read-only members (role 'viewer') cannot mutate the project.
+    const isOwner = project.userId === userId;
+    if (!isOwner && project.roles && project.roles[email] === 'viewer') {
+      throw new ForbiddenException('You have read-only access to this project');
+    }
+
+    if (move.columns && typeof move.columns === 'object') {
+      const columns = { ...(project.columns || {}) };
+      for (const [colId, taskIds] of Object.entries(move.columns)) {
+        if (!columns[colId] || !Array.isArray(taskIds)) continue; // ignore unknown columns / bad payloads
+        columns[colId] = { ...columns[colId], taskIds };
+      }
+      project.columns = columns;
+      project.markModified('columns');
+    }
+
+    if (Array.isArray(move.columnOrder)) {
+      project.columnOrder = move.columnOrder;
+    }
+
+    if (move.taskUpdates && typeof move.taskUpdates === 'object') {
+      const tasks = { ...(project.tasks || {}) };
+      for (const [taskId, patch] of Object.entries(move.taskUpdates)) {
+        if (!tasks[taskId] || !patch || typeof patch !== 'object') continue; // only patch existing tasks
+        tasks[taskId] = { ...tasks[taskId], ...patch };
+      }
+      project.tasks = tasks;
+      project.markModified('tasks');
+    }
+
+    if (move.activity && move.activity.text) {
+      const log = Array.isArray(project.activityLog) ? project.activityLog : [];
+      project.activityLog = [move.activity, ...log].slice(0, 50);
+      project.markModified('activityLog');
+    }
+
+    const saved = await project.save();
+
+    this.eventsGateway.emitToUser(saved.userId, 'project_updated', { projectId: saved.id });
+    if (Array.isArray(saved.sharedWith)) {
+      saved.sharedWith.forEach(uid => {
+        this.eventsGateway.emitToUser(uid, 'project_updated', { projectId: saved.id });
+      });
+    }
+
+    return { ok: true };
+  }
+
   async remove(id: string, userId: string): Promise<void> {
     // Only the explicit owner can delete
     const project = await this.projectModel.findOne({ id }).exec();

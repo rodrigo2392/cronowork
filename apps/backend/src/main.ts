@@ -2,9 +2,14 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  // Moving/updating a task re-sends the whole project (all columns + tasks),
+  // which can exceed Express's default 100kb body limit → "request entity too large".
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ extended: true, limit: '10mb' }));
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {

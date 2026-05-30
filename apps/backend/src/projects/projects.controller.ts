@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { InviteDto, SetRoleDto } from './dto/member.dto';
+import { MoveDto } from './dto/move.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('projects')
@@ -26,6 +27,13 @@ export class ProjectsController {
   @Put(':id')
   async update(@Param('id') id: string, @Body() projectData: any, @Req() req: any) {
     return this.projectsService.update(id, req.user.userId, req.user.email, projectData);
+  }
+
+  // Lightweight drag/drop move — sends only the affected columns/tasks, not
+  // the whole project (avoids "request entity too large" on large boards).
+  @Patch(':id/move')
+  async move(@Param('id') id: string, @Body() body: MoveDto, @Req() req: any) {
+    return this.projectsService.applyMove(id, req.user.userId, req.user.email, body);
   }
 
   @Post(':id/invite')
