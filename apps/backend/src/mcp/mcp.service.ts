@@ -533,7 +533,11 @@ export class McpService {
         endpointEventPatched = true;
         const sessionMatch = chunk.match(/sessionId=([\w-]+)/);
         const sessionId = sessionMatch ? sessionMatch[1] : '';
-        chunk = `event: endpoint\ndata: ${endpoint}&sessionId=${sessionId}\n\n`;
+        // Use `?` when the endpoint has no query string yet (header-based auth,
+        // no `?token=`), otherwise `&`. Getting this wrong turns `&sessionId`
+        // into part of the path and the client's POST 404s.
+        const sep = endpoint.includes('?') ? '&' : '?';
+        chunk = `event: endpoint\ndata: ${endpoint}${sep}sessionId=${sessionId}\n\n`;
       }
       return originalWrite(chunk, ...args);
     };
