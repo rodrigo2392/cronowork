@@ -874,24 +874,18 @@ export const BoardProvider = ({ children }) => {
       const lastColumnId = resolveDoneColumnId(activeProject);
       const lastColumn = updatedColumns[lastColumnId];
       if (lastColumn && lastColumn.taskIds.length) {
-        // Backfill: a task can land in the done column without a drag (created
-        // there, AI-generated, imported, or from before this field existed).
-        // Without movedToDoneAt it would never qualify for archiving, so stamp
-        // it now to start its clock. One-time per task (next run it's set).
-        const nowIso = new Date(now).toISOString();
-        lastColumn.taskIds.forEach(taskId => {
-          const task = updatedTasks[taskId];
-          if (task && !task.archived && !task.movedToDoneAt) {
-            updatedTasks[taskId] = { ...task, movedToDoneAt: nowIso };
-            changed = true;
-          }
-        });
-
         const archiveMs = (activeProject.autoArchiveDays || 7) * 24 * 60 * 60 * 1000;
+        // Eligibility is computed on the fly from the best available timestamp —
+        // movedToDoneAt (set when dragged to done) or, when that's missing
+        // (task created in the done column, AI-generated, imported, or predating
+        // the field), createdAt as a proxy. We deliberately do NOT persist a
+        // backfilled movedToDoneAt: writing "now" on first sight would restart
+        // the clock and keep already-old tasks visible for a full extra window.
         const toArchive = lastColumn.taskIds.filter(taskId => {
           const task = updatedTasks[taskId];
-          return task && !task.archived && task.movedToDoneAt &&
-            (now - new Date(task.movedToDoneAt).getTime() > archiveMs);
+          if (!task || task.archived) return false;
+          const stamp = task.movedToDoneAt || task.createdAt;
+          return stamp && (now - new Date(stamp).getTime() > archiveMs);
         });
         if (toArchive.length) {
           updatedColumns[lastColumnId] = {
