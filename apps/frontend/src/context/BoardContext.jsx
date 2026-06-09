@@ -852,6 +852,14 @@ export const BoardProvider = ({ children }) => {
   };
 
   // --- Auto Archive / Auto Delete Logic ---
+  // A periodic tick so a board left open past the threshold still archives,
+  // instead of only re-evaluating when the project state happens to change.
+  const [archiveTick, setArchiveTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setArchiveTick(t => t + 1), 60 * 60 * 1000); // hourly
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     if (!activeProject || !activeProject.columnOrder.length) return;
 
@@ -866,6 +874,19 @@ export const BoardProvider = ({ children }) => {
       const lastColumnId = resolveDoneColumnId(activeProject);
       const lastColumn = updatedColumns[lastColumnId];
       if (lastColumn && lastColumn.taskIds.length) {
+        // Backfill: a task can land in the done column without a drag (created
+        // there, AI-generated, imported, or from before this field existed).
+        // Without movedToDoneAt it would never qualify for archiving, so stamp
+        // it now to start its clock. One-time per task (next run it's set).
+        const nowIso = new Date(now).toISOString();
+        lastColumn.taskIds.forEach(taskId => {
+          const task = updatedTasks[taskId];
+          if (task && !task.archived && !task.movedToDoneAt) {
+            updatedTasks[taskId] = { ...task, movedToDoneAt: nowIso };
+            changed = true;
+          }
+        });
+
         const archiveMs = (activeProject.autoArchiveDays || 7) * 24 * 60 * 60 * 1000;
         const toArchive = lastColumn.taskIds.filter(taskId => {
           const task = updatedTasks[taskId];
@@ -912,7 +933,7 @@ export const BoardProvider = ({ children }) => {
       updateProjectState({ ...activeProject, tasks: updatedTasks, columns: updatedColumns });
       activityMsgs.forEach(msg => logActivity(activeProject.id, msg));
     }
-  }, [activeProject]);
+  }, [activeProject, archiveTick]);
 
   // --- Drag and Drop Movement Handler ---
   const handleDragEnd = (result) => {
