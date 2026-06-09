@@ -6,16 +6,11 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { getCorsOrigins } from '../config/cors';
 
 @WebSocketGateway({
   cors: {
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:5750',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:5750',
-      process.env.APP_URL || 'https://cronowork.app',
-    ],
+    origin: getCorsOrigins(),
     credentials: true,
   },
 })

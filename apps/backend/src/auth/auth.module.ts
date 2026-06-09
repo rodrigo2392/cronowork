@@ -20,7 +20,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         }
         return {
           secret,
-          signOptions: { expiresIn: '7d' },
+          signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '7d' },
         };
       },
       inject: [ConfigService],

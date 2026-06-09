@@ -33,7 +33,11 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
       ttl: 60000,
       limit: 100,
     }]),
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      // Load the single .env at the monorepo root (cwd is apps/backend at runtime).
+      envFilePath: join(__dirname, '..', '..', '..', '.env'),
+    }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'frontend', 'dist'),
       exclude: ['/api/(.*)', '/mcp/(.*)', '/projects/(.*)', '/auth/(.*)', '/users/(.*)', '/ai/(.*)', '/notifications/(.*)', '/socket.io/(.*)'],

@@ -3,6 +3,7 @@ import { AppModule } from "./app.module";
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
 import { json, urlencoded } from 'express';
+import { getCorsOrigins } from './config/cors';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -19,15 +20,10 @@ async function bootstrap() {
     },
   }));
   app.enableCors({
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:5750',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:5750',
-    ],
+    origin: getCorsOrigins(),
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  await app.listen(3500);
+  await app.listen(Number(process.env.PORT) || 3500);
 }
 bootstrap();

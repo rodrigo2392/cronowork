@@ -44,7 +44,7 @@ export class AiService {
 
       // Call OpenAI to structure tasks
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
