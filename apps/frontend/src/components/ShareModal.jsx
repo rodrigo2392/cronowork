@@ -7,7 +7,7 @@ import * as Icons from 'lucide-react';
 import { APP_URL } from '../config';
 
 export default function ShareModal() {
-  const { isShareModalOpen, setIsShareModalOpen, activeProject, inviteMember, setMemberRole, canManageMembers, allUsers } = useBoard();
+  const { isShareModalOpen, setIsShareModalOpen, activeProject, inviteMember, setMemberRole, canManageMembers, allUsers, createShareLink, revokeShareLink } = useBoard();
   const { user } = useAuth();
   const { t } = useTranslation();
 
@@ -15,6 +15,7 @@ export default function ShareModal() {
   const [inviteRole, setInviteRole] = useState('editor');
   const [isCopied, setIsCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [linkLoading, setLinkLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
 
   if (!isShareModalOpen || !activeProject) return null;
@@ -58,12 +59,32 @@ export default function ShareModal() {
     }
   };
 
+  const shareToken = activeProject.shareToken;
+  const shareLink = shareToken ? `${APP_URL}/?join=${shareToken}` : '';
+  const linkRole = activeProject.shareRole || 'editor';
+
   const handleCopyLink = () => {
-    const shareLink = `${APP_URL}/?project=${activeProject.id}`;
+    if (!shareLink) return;
     navigator.clipboard.writeText(shareLink);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };
+
+  const runLinkAction = async (action) => {
+    setLinkLoading(true);
+    setErrorMsg(null);
+    try {
+      await action();
+    } catch (err) {
+      setErrorMsg(t('modal.share.error_generic') || 'An error occurred');
+    } finally {
+      setLinkLoading(false);
+    }
+  };
+
+  const handleGenerateLink = () => runLinkAction(() => createShareLink(activeProject.id, linkRole));
+  const handleLinkRoleChange = (role) => runLinkAction(() => createShareLink(activeProject.id, role));
+  const handleRevokeLink = () => runLinkAction(() => revokeShareLink(activeProject.id));
 
   const members = activeProject.members || [];
 
@@ -285,51 +306,123 @@ export default function ShareModal() {
               </div>
             </div>
 
+            {/* Invite Link */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.03)', paddingTop: '20px' }}>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                {t('modal.share.link_label') || 'Invite link'}
+              </label>
+
+              {shareLink ? (
+                <>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      readOnly
+                      value={shareLink}
+                      onFocus={(e) => e.target.select()}
+                      style={{
+                        flex: 1,
+                        padding: '10px 12px',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--bg-tertiary)',
+                        color: 'var(--text-secondary)',
+                        fontFamily: 'var(--font-mono, monospace)',
+                        fontSize: '0.8rem',
+                        outline: 'none',
+                        textOverflow: 'ellipsis',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '6px', padding: '0 16px',
+                        backgroundColor: isCopied ? 'var(--completed-color)' : 'rgba(99, 102, 241, 0.1)',
+                        border: isCopied ? '1px solid var(--completed-color)' : '1px solid rgba(99, 102, 241, 0.2)',
+                        borderRadius: 'var(--radius-md)',
+                        color: isCopied ? '#ffffff' : 'var(--accent-color)',
+                        fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap',
+                        transition: 'all var(--transition-fast)',
+                      }}
+                    >
+                      {isCopied ? <Icons.Check size={14} /> : <Icons.Link size={14} />}
+                      <span>{isCopied ? (t('modal.share.copied') || '¡Copiado!') : (t('modal.share.copy_link') || 'Copiar Enlace')}</span>
+                    </button>
+                  </div>
+
+                  {canManageMembers && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t('modal.share.link_role') || 'Role on join:'}</span>
+                        <select
+                          value={linkRole}
+                          disabled={linkLoading}
+                          onChange={(e) => handleLinkRoleChange(e.target.value)}
+                          style={{
+                            padding: '4px 8px', borderRadius: '99px', border: '1px solid var(--border-color)',
+                            backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)',
+                            fontSize: '0.75rem', outline: 'none', cursor: 'pointer',
+                          }}
+                        >
+                          <option value="admin">{t('modal.share.role_admin') || 'Administrador'}</option>
+                          <option value="editor">{t('modal.share.role_editor') || 'Editor'}</option>
+                          <option value="viewer">{t('modal.share.role_viewer') || 'Lector'}</option>
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRevokeLink}
+                        disabled={linkLoading}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px',
+                          backgroundColor: 'transparent', border: '1px solid rgba(239, 68, 68, 0.3)',
+                          borderRadius: 'var(--radius-md)', color: 'var(--priority-high)',
+                          fontSize: '0.78rem', fontWeight: 500, cursor: linkLoading ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        <Icons.Link2Off size={14} />
+                        <span>{t('modal.share.link_disable') || 'Desactivar enlace'}</span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
+                    {canManageMembers ? (t('modal.share.link_desc') || 'Anyone with the link can join the project with the selected role.') : (t('modal.share.link_disabled') || 'The invite link is disabled.')}
+                  </p>
+                  {canManageMembers && (
+                    <button
+                      type="button"
+                      onClick={handleGenerateLink}
+                      disabled={linkLoading}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        marginTop: '4px', padding: '10px 16px',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)',
+                        borderRadius: 'var(--radius-md)', color: 'var(--accent-color)',
+                        fontSize: '0.85rem', fontWeight: 500, cursor: linkLoading ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {linkLoading ? <Icons.Loader2 size={16} className="spin" style={{ animation: 'spin 1s linear infinite' }} /> : <Icons.Link size={14} />}
+                      <span>{t('modal.share.link_generate') || 'Generar enlace'}</span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
             {/* Footer Actions */}
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-end',
                 alignItems: 'center',
                 marginTop: '12px',
                 borderTop: '1px solid rgba(255, 255, 255, 0.03)',
                 paddingTop: '20px',
               }}
             >
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '10px 16px',
-                  backgroundColor: isCopied ? "var(--completed-color)" : "rgba(99, 102, 241, 0.1)",
-                  border: isCopied ? "1px solid var(--completed-color)" : "1px solid rgba(99, 102, 241, 0.2)",
-                  borderRadius: "var(--radius-md)",
-                  color: isCopied ? "#ffffff" : "var(--accent-color)",
-                  fontSize: "0.85rem",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  transition: "all var(--transition-fast)",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isCopied) {
-                    e.currentTarget.style.backgroundColor = "var(--accent-color)";
-                    e.currentTarget.style.color = "#ffffff";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isCopied) {
-                    e.currentTarget.style.backgroundColor = "rgba(99, 102, 241, 0.1)";
-                    e.currentTarget.style.color = "var(--accent-color)";
-                  }
-                }}
-              >
-                {isCopied ? <Icons.Check size={14} /> : <Icons.Link size={14} />}
-                <span>{isCopied ? t("modal.share.copied") || "¡Copiado!" : t("modal.share.copy_link") || "Copiar Enlace"}</span>
-              </button>
-              
               <button
                 type="button"
                 onClick={() => setIsShareModalOpen(false)}

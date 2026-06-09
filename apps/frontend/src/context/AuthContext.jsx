@@ -15,7 +15,10 @@ const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   try {
     const response = await originalFetch(...args);
-    if (response.status === 401 || response.status === 403) {
+    // Only 401 (invalid/expired token) should end the session. A 403 means the
+    // user IS authenticated but lacks permission for that one action (e.g. a
+    // read-only member attempting a mutation) — logging them out would be wrong.
+    if (response.status === 401) {
       const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
       if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
         window.dispatchEvent(new Event('auth-unauthorized'));

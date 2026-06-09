@@ -222,6 +222,39 @@ export const BoardProvider = ({ children }) => {
     }
   }, [activeProjectId]);
 
+  // Process a share link (?join=<token>): join the project once, then swap the
+  // URL to ?project=<id> and open it. Runs only once we're authenticated.
+  const [joinHandled, setJoinHandled] = useState(false);
+  useEffect(() => {
+    if (!token || joinHandled) return;
+    const joinToken = new URLSearchParams(window.location.search).get('join');
+    if (!joinToken) return;
+    setJoinHandled(true);
+
+    (async () => {
+      const url = new URL(window.location.href);
+      try {
+        const res = await fetch(`${API_URL}/projects/join/${joinToken}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const joined = await res.json();
+          await refreshProjects();
+          setActiveProjectId(joined.id);
+          url.searchParams.delete('join');
+          url.searchParams.set('project', joined.id);
+        } else {
+          url.searchParams.delete('join'); // invalid / revoked link
+        }
+      } catch (err) {
+        console.error('Failed to join via share link:', err);
+        url.searchParams.delete('join');
+      }
+      window.history.replaceState({}, '', url.toString());
+    })();
+  }, [token, joinHandled, refreshProjects]);
+
   // Parse initial task from URL
   useEffect(() => {
     if (!isProjectsLoading && projects.length > 0 && !initialUrlParsed) {
@@ -507,6 +540,37 @@ export const BoardProvider = ({ children }) => {
     if (!response.ok) throw new Error("generic");
     const updatedProject = await response.json();
     setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+  };
+
+  // --- Share link (owner/admin) ---
+  // Enable/update the shareable link. Only patches share fields onto local
+  // state so the de-duplicated columns from refreshProjects aren't clobbered.
+  const createShareLink = async (projectId, role = 'editor') => {
+    if (!token) return null;
+    const response = await fetch(`${API_URL}/projects/${projectId}/share-link`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ role }),
+    });
+    if (!response.ok) throw new Error("generic");
+    const updated = await response.json();
+    setProjects(prev => prev.map(p => p.id === projectId
+      ? { ...p, shareToken: updated.shareToken, shareRole: updated.shareRole }
+      : p));
+    return updated;
+  };
+
+  const revokeShareLink = async (projectId) => {
+    if (!token) return;
+    const response = await fetch(`${API_URL}/projects/${projectId}/share-link`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error("generic");
+    const updated = await response.json();
+    setProjects(prev => prev.map(p => p.id === projectId
+      ? { ...p, shareToken: updated.shareToken, shareRole: updated.shareRole }
+      : p));
   };
 
   // --- Column CRUD ---
@@ -1120,6 +1184,8 @@ export const BoardProvider = ({ children }) => {
         isReadOnly,
         canManageMembers,
         setMemberRole,
+        createShareLink,
+        revokeShareLink,
       }}
     >
       {children}

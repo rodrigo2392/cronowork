@@ -213,6 +213,12 @@ export const en = {
   "modal.share.error_user_not_found": "User does not exist",
   "modal.share.error_already_member": "User is already a member",
   "modal.share.error_generic": "Failed to invite user",
+  "modal.share.link_label": "Invite link",
+  "modal.share.link_desc": "Anyone with the link can join the project with the selected role.",
+  "modal.share.link_generate": "Generate link",
+  "modal.share.link_disable": "Disable link",
+  "modal.share.link_role": "Role on join:",
+  "modal.share.link_disabled": "The invite link is disabled.",
 
   // Profile Modal
   "modal.profile.title": "My Profile",

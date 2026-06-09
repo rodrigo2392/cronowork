@@ -48,8 +48,14 @@ export class UsersService {
       .exec();
   }
 
+  // Case-insensitive exact match: emails are identity, so "User@x.com" and
+  // "user@x.com" must resolve to the same account (login, invites, dedup).
   async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).exec();
+    if (typeof email !== 'string' || !email.trim()) return null;
+    const escaped = email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return this.userModel
+      .findOne({ email: { $regex: new RegExp(`^${escaped}$`, 'i') } })
+      .exec();
   }
 
   async findByEmailOrName(identifier: string): Promise<User | null> {

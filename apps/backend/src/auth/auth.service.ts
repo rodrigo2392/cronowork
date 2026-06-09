@@ -28,15 +28,18 @@ export class AuthService {
   }
 
   async register(email: string, pass: string, name: string) {
-    const existingUser = await this.usersService.findByEmail(email);
+    // Canonicalize the email so accounts are stored consistently and the
+    // sharing ACL (members/roles, keyed by email) always lines up later.
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    const existingUser = await this.usersService.findByEmail(normalizedEmail);
     if (existingUser) {
       throw new ConflictException('Email already in use');
     }
-    
+
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(pass, saltRounds);
-    
-    const newUser = await this.usersService.create(email, passwordHash, name);
+
+    const newUser = await this.usersService.create(normalizedEmail, passwordHash, name);
     return this.login(newUser);
   }
 }

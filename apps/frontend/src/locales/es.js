@@ -216,6 +216,12 @@ export const es = {
   "modal.share.error_user_not_found": "El usuario no existe",
   "modal.share.error_already_member": "El usuario ya es miembro",
   "modal.share.error_generic": "Error al invitar",
+  "modal.share.link_label": "Enlace de invitación",
+  "modal.share.link_desc": "Cualquiera con el enlace podrá unirse al proyecto con el rol seleccionado.",
+  "modal.share.link_generate": "Generar enlace",
+  "modal.share.link_disable": "Desactivar enlace",
+  "modal.share.link_role": "Rol al unirse:",
+  "modal.share.link_disabled": "El enlace de invitación está desactivado.",
 
   // Profile Modal
   "modal.profile.title": "Mi Perfil",

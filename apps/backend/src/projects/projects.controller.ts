@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { InviteDto, SetRoleDto } from './dto/member.dto';
+import { InviteDto, SetRoleDto, ShareLinkDto } from './dto/member.dto';
 import { MoveDto } from './dto/move.dto';
 
 @UseGuards(JwtAuthGuard)
@@ -43,6 +43,29 @@ export class ProjectsController {
     @Req() req: any
   ) {
     return this.projectsService.inviteUser(id, req.user.userId, body.email, body.role, req.user.email);
+  }
+
+  // Enable / update the shareable link (owner or admin). Returns the project
+  // including the new shareToken so the client can build the URL.
+  @Post(':id/share-link')
+  async createShareLink(
+    @Param('id') id: string,
+    @Body() body: ShareLinkDto,
+    @Req() req: any
+  ) {
+    return this.projectsService.createShareLink(id, req.user.userId, req.user.email, body.role);
+  }
+
+  // Disable the shareable link (owner or admin).
+  @Delete(':id/share-link')
+  async revokeShareLink(@Param('id') id: string, @Req() req: any) {
+    return this.projectsService.revokeShareLink(id, req.user.userId, req.user.email);
+  }
+
+  // Join a project via its share link. Any authenticated user with a valid token.
+  @Post('join/:token')
+  async joinByToken(@Param('token') token: string, @Req() req: any) {
+    return this.projectsService.joinByToken(token, req.user.userId, req.user.email);
   }
 
   @Put(':id/members/role')

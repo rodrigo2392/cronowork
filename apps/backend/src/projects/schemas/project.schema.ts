@@ -20,6 +20,15 @@ export class Project extends Document {
   @Prop({ required: true, unique: true })
   id: string;
 
+  // Link-based sharing: a random token that lets any authenticated user join
+  // the project. Empty/undefined = link sharing disabled. shareRole is the
+  // access role granted to whoever joins through the link.
+  @Prop({ index: true })
+  shareToken: string;
+
+  @Prop({ default: 'editor' })
+  shareRole: string;
+
   @Prop({ required: true })
   name: string;
 

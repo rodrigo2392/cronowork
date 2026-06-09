@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { randomBytes } from 'crypto';
 import { Project } from './schemas/project.schema';
 import { UsersService } from '../users/users.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -193,6 +194,14 @@ export class ProjectsService {
 
     const targetUser = await this.usersService.findByEmail(targetEmail);
 
+    // The email stored in members/roles must equal the email carried in the
+    // invitee's JWT (which comes from their stored user record). For registered
+    // users we use their canonical stored email; otherwise we normalize the
+    // typed value so a future registration with the same email matches.
+    const memberEmail = targetUser
+      ? targetUser.email
+      : targetEmail.trim().toLowerCase();
+
     if (targetUser) {
       const targetUserId = targetUser._id.toString();
       if (project.userId === targetUserId || project.sharedWith.includes(targetUserId)) {
@@ -213,16 +222,24 @@ export class ProjectsService {
     if (!project.members) {
       project.members = [];
     }
-    if (!project.members.includes(targetEmail)) {
-      project.members.push(targetEmail);
+    if (!project.members.includes(memberEmail)) {
+      project.members.push(memberEmail);
     } else if (!targetUser) {
       throw new BadRequestException('User is already invited to this project');
     }
 
-    project.roles = { ...(project.roles || {}), [targetEmail]: safeRole };
+    project.roles = { ...(project.roles || {}), [memberEmail]: safeRole };
     project.markModified('roles');
 
-    return project.save();
+    const saved = await project.save();
+
+    // Push a live refresh so an already-connected invitee sees the project
+    // immediately, without a manual reload. (Mirrors setMemberRole.)
+    if (targetUser) {
+      this.eventsGateway.emitToUser(targetUser._id.toString(), 'project_updated', { projectId: saved.id });
+    }
+
+    return saved;
   }
 
   // Owner or admin: change a member's access role ('admin' | 'editor' | 'viewer').
@@ -248,6 +265,69 @@ export class ProjectsService {
     }
     this.eventsGateway.emitToUser(project.userId, 'project_updated', { projectId: project.id });
 
+    return saved;
+  }
+
+  // Owner or admin: enable (or update the role of) the shareable link. Generates
+  // a token on first call and reuses it afterwards so existing links stay valid.
+  async createShareLink(projectId: string, requesterId: string, requesterEmail: string, role: string = 'editor'): Promise<Project> {
+    const safeRole = ProjectsService.normalizeRole(role);
+    const project = await this.projectModel.findOne({ id: projectId }).exec();
+    if (!project) throw new NotFoundException('Project not found');
+    if (!ProjectsService.canManageMembers(project, requesterId, requesterEmail)) {
+      throw new ForbiddenException('Only the project owner or an admin can manage the share link');
+    }
+
+    if (!project.shareToken) {
+      project.shareToken = randomBytes(24).toString('hex');
+    }
+    project.shareRole = safeRole;
+    return project.save();
+  }
+
+  // Owner or admin: disable the link. Existing links stop working immediately.
+  async revokeShareLink(projectId: string, requesterId: string, requesterEmail: string): Promise<Project> {
+    const project = await this.projectModel.findOne({ id: projectId }).exec();
+    if (!project) throw new NotFoundException('Project not found');
+    if (!ProjectsService.canManageMembers(project, requesterId, requesterEmail)) {
+      throw new ForbiddenException('Only the project owner or an admin can manage the share link');
+    }
+
+    project.shareToken = undefined;
+    return project.save();
+  }
+
+  // Any authenticated user with a valid link joins the project at shareRole.
+  // Idempotent: owners/existing members just get the project back unchanged.
+  async joinByToken(token: string, userId: string, email: string): Promise<Project> {
+    if (!token || typeof token !== 'string') throw new NotFoundException('Invalid share link');
+    const project = await this.projectModel.findOne({ shareToken: token }).exec();
+    if (!project) throw new NotFoundException('This share link is invalid or has been revoked');
+
+    const alreadyMember =
+      project.userId === userId ||
+      (project.sharedWith || []).includes(userId) ||
+      (email && (project.members || []).includes(email));
+    if (alreadyMember) return project;
+
+    const safeRole = ProjectsService.normalizeRole(project.shareRole || 'editor');
+
+    if (!project.sharedWith.includes(userId)) {
+      project.sharedWith.push(userId);
+    }
+    if (!project.members) project.members = [];
+    if (email && !project.members.includes(email)) {
+      project.members.push(email);
+    }
+    if (email) {
+      project.roles = { ...(project.roles || {}), [email]: safeRole };
+      project.markModified('roles');
+    }
+
+    const saved = await project.save();
+
+    // Refresh the owner (and any other members) so the new member appears live.
+    this.eventsGateway.emitToUser(saved.userId, 'project_updated', { projectId: saved.id });
     return saved;
   }
 }

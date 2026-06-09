@@ -16,3 +16,9 @@ export class SetRoleDto {
   @IsIn(['admin', 'editor', 'viewer'])
   role: string;
 }
+
+export class ShareLinkDto {
+  @IsOptional()
+  @IsIn(['admin', 'editor', 'viewer'])
+  role?: string;
+}
