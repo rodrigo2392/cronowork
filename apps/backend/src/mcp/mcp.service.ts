@@ -120,6 +120,10 @@ export class McpService {
                   },
                   description: "Array of subtask objects (optional)" 
                 },
+                sprintId: { type: "string", description: "The ID of the sprint to associate the task with (optional)" },
+                storyPoints: { type: "number", description: "The story point estimation for the task (optional)" },
+                dodCompletedItems: { type: "array", items: { type: "string" }, description: "Array of completed Definition of Done items titles (optional)" },
+                assignee: { type: "string", description: "The email address of the user assigned to this task (optional)" },
                 tokensConsumed: { type: "number", description: "Number of tokens consumed by the AI agent (optional)" },
                 timeSpent: { type: "string", description: "Time spent by the AI agent, e.g. '45s', '2m' (optional)" },
                 cost: { type: "number", description: "Estimated cost in USD of the AI operation (optional)" },
@@ -154,6 +158,10 @@ export class McpService {
                   description: "New array of subtask objects (optional)" 
                 },
                 newColumnId: { type: "string", description: "The ID of the new column to move the task to (optional)" },
+                sprintId: { type: "string", description: "The ID of the sprint, or 'backlog'/empty string to send back to backlog (optional)" },
+                storyPoints: { type: "number", description: "The story point estimation for the task (optional)" },
+                dodCompletedItems: { type: "array", items: { type: "string" }, description: "New array of completed Definition of Done items titles (optional)" },
+                assignee: { type: "string", description: "The email address of the user assigned to this task, or empty/null to unassign (optional)" },
                 tokensConsumed: { type: "number", description: "Update number of tokens consumed by the AI agent (optional)" },
                 timeSpent: { type: "string", description: "Update time spent by the AI agent (optional)" },
                 cost: { type: "number", description: "Update estimated cost in USD (optional)" },
@@ -201,6 +209,117 @@ export class McpService {
               },
               required: ["projectId", "taskId", "content"],
             },
+          },
+          {
+            name: "list_sprints",
+            description: "List all sprints for a specific project",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project" }
+              },
+              required: ["projectId"]
+            }
+          },
+          {
+            name: "create_sprint",
+            description: "Create a new sprint in a project",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project" },
+                name: { type: "string", description: "The name of the new sprint" },
+                startDate: { type: "string", description: "The start date in YYYY-MM-DD format (optional)" },
+                endDate: { type: "string", description: "The end date in YYYY-MM-DD format (optional)" },
+                goal: { type: "string", description: "The sprint goal (optional)" }
+              },
+              required: ["projectId", "name"]
+            }
+          },
+          {
+            name: "update_sprint",
+            description: "Update details of an existing sprint (name, dates, goal, status, retro notes)",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project" },
+                sprintId: { type: "string", description: "The ID of the sprint to update" },
+                name: { type: "string", description: "New name of the sprint (optional)" },
+                startDate: { type: "string", description: "New start date in YYYY-MM-DD format (optional)" },
+                endDate: { type: "string", description: "New end date in YYYY-MM-DD format (optional)" },
+                goal: { type: "string", description: "New sprint goal (optional)" },
+                status: { type: "string", description: "Sprint status: 'planned', 'active', 'completed' (optional)" },
+                retro: {
+                  type: "object",
+                  properties: {
+                    wentWell: { type: "array", items: { type: "string" }, description: "Things that went well (optional)" },
+                    toImprove: { type: "array", items: { type: "string" }, description: "Things to improve (optional)" },
+                    actions: { type: "array", items: { type: "string" }, description: "Retro action items (optional)" }
+                  },
+                  description: "Sprint retrospective data (optional)"
+                }
+              },
+              required: ["projectId", "sprintId"]
+            }
+          },
+          {
+            name: "complete_sprint",
+            description: "Complete a sprint. Move uncompleted tasks to the backlog or to another sprint, record stats, and log retro notes.",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project" },
+                sprintId: { type: "string", description: "The ID of the sprint to complete" },
+                fallbackSprintId: { type: "string", description: "The ID of the sprint to roll incomplete tasks forward to, or 'backlog' (optional, defaults to 'backlog')" },
+                retro: {
+                  type: "object",
+                  properties: {
+                    wentWell: { type: "array", items: { type: "string" }, description: "Things that went well (optional)" },
+                    toImprove: { type: "array", items: { type: "string" }, description: "Things to improve (optional)" },
+                    actions: { type: "array", items: { type: "string" }, description: "Retro action items (optional)" }
+                  },
+                  description: "Sprint retrospective data (optional)"
+                }
+              },
+              required: ["projectId", "sprintId"]
+            }
+          },
+          {
+            name: "update_project_dod",
+            description: "Update the project's Definition of Done (DoD) list",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project" },
+                definitionOfDone: { type: "array", items: { type: "string" }, description: "Array of Definition of Done criterion strings" }
+              },
+              required: ["projectId", "definitionOfDone"]
+            }
+          },
+          {
+            name: "delete_task",
+            description: "Delete an existing task from a specific project and column",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project" },
+                taskId: { type: "string", description: "The ID of the task to delete" },
+                columnId: { type: "string", description: "The ID of the column where the task resides (optional)" }
+              },
+              required: ["projectId", "taskId"]
+            }
+          },
+          {
+            name: "delete_sprint",
+            description: "Delete a sprint from a project and return its tasks to the backlog",
+            inputSchema: {
+              type: "object",
+              properties: {
+                projectId: { type: "string", description: "The ID of the project" },
+                sprintId: { type: "string", description: "The ID of the sprint to delete" }
+              },
+              required: ["projectId", "sprintId"]
+            }
           }
         ],
       };
@@ -273,14 +392,14 @@ export class McpService {
       }
 
       if (request.params.name === "add_task") {
-        const { projectId, columnId, title, description, priority, tags, dueDate, subtasks, tokensConsumed, timeSpent, cost, model } = request.params
+        const { projectId, columnId, title, description, priority, tags, dueDate, subtasks, sprintId, storyPoints, dodCompletedItems, assignee, tokensConsumed, timeSpent, cost, model } = request.params
           .arguments as any;
 
         try {
           const project = await this.projectsService.findOne(
-            projectId,
-            AI_AGENT_USER_ID,
-            AI_AGENT_EMAIL
+             projectId,
+             AI_AGENT_USER_ID,
+             AI_AGENT_EMAIL
           );
 
           const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -295,6 +414,11 @@ export class McpService {
             dueDate: dueDate || "",
             createdAt: new Date().toISOString(),
           };
+
+          if (sprintId !== undefined) newTask.sprintId = sprintId;
+          if (storyPoints !== undefined) newTask.storyPoints = storyPoints;
+          if (dodCompletedItems !== undefined) newTask.dodCompletedItems = dodCompletedItems;
+          if (assignee !== undefined) newTask.assignee = assignee;
 
           if (tokensConsumed !== undefined) newTask.tokensConsumed = tokensConsumed;
           if (timeSpent !== undefined) newTask.timeSpent = timeSpent;
@@ -339,7 +463,7 @@ export class McpService {
       }
 
       if (request.params.name === "update_task") {
-        const { projectId, taskId, title, description, priority, tags, dueDate, subtasks, newColumnId, tokensConsumed, timeSpent, cost, model } = request.params.arguments as any;
+        const { projectId, taskId, title, description, priority, tags, dueDate, subtasks, newColumnId, sprintId, storyPoints, dodCompletedItems, assignee, tokensConsumed, timeSpent, cost, model } = request.params.arguments as any;
         try {
           const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
           
@@ -355,6 +479,13 @@ export class McpService {
           if (tags !== undefined) project.tasks[taskId].tags = tags;
           if (dueDate !== undefined) project.tasks[taskId].dueDate = dueDate;
           if (subtasks !== undefined) project.tasks[taskId].subtasks = subtasks;
+          
+          if (sprintId !== undefined) {
+            project.tasks[taskId].sprintId = (sprintId === 'backlog' || sprintId === '') ? null : sprintId;
+          }
+          if (storyPoints !== undefined) project.tasks[taskId].storyPoints = storyPoints;
+          if (dodCompletedItems !== undefined) project.tasks[taskId].dodCompletedItems = dodCompletedItems;
+          if (assignee !== undefined) project.tasks[taskId].assignee = assignee || '';
           
           if (tokensConsumed !== undefined) project.tasks[taskId].tokensConsumed = tokensConsumed;
           if (timeSpent !== undefined) project.tasks[taskId].timeSpent = timeSpent;
@@ -500,6 +631,297 @@ export class McpService {
             isError: true,
             content: [{ type: "text", text: `Error updating project: ${error?.message}` }],
           };
+        }
+      }
+
+      if (request.params.name === "list_sprints") {
+        const { projectId } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          return { content: [{ type: "text", text: JSON.stringify(project.sprints || []) }] };
+        } catch (error: any) {
+          return { isError: true, content: [{ type: "text", text: `Error listing sprints: ${error?.message}` }] };
+        }
+      }
+
+      if (request.params.name === "create_sprint") {
+        const { projectId, name, startDate, endDate, goal } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          
+          const newSprint = {
+            id: `sprint-${Date.now()}`,
+            name: name || `Sprint ${(project.sprints?.length || 0) + 1}`,
+            startDate: startDate || '',
+            endDate: endDate || '',
+            goal: goal || '',
+            status: 'planned',
+            completedAt: null,
+            burndownHistory: [],
+            stats: null,
+            retro: null
+          };
+
+          project.sprints = [...(project.sprints || []), newSprint];
+          project.markModified('sprints');
+          
+          const logEntry = {
+            id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            userId: AI_AGENT_USER_ID,
+            userName: user.email || 'Agente IA',
+            action: `Created sprint "${newSprint.name}"`,
+            timestamp: new Date().toISOString()
+          };
+          project.activityLog = [logEntry, ...(project.activityLog || [])].slice(0, 100);
+          project.markModified('activityLog');
+
+          await this.projectsService.update(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL, project);
+          return { content: [{ type: "text", text: `Sprint successfully created. Sprint ID: ${newSprint.id}` }] };
+        } catch (error: any) {
+          return { isError: true, content: [{ type: "text", text: `Error creating sprint: ${error?.message}` }] };
+        }
+      }
+
+      if (request.params.name === "update_sprint") {
+        const { projectId, sprintId, name, startDate, endDate, goal, status, retro } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          
+          let sprintFound = false;
+          project.sprints = (project.sprints || []).map((s: any) => {
+            if (s.id === sprintId) {
+              sprintFound = true;
+              const updated = { ...s };
+              if (name !== undefined) updated.name = name;
+              if (startDate !== undefined) updated.startDate = startDate;
+              if (endDate !== undefined) updated.endDate = endDate;
+              if (goal !== undefined) updated.goal = goal;
+              if (retro !== undefined) updated.retro = retro;
+              
+              if (status !== undefined) {
+                if (status === 'active' && s.status !== 'active') {
+                  const sprintTasks = Object.values(project.tasks || {}).filter((t: any) => t.sprintId === sprintId);
+                  const totalSP = sprintTasks.reduce((acc: number, t: any) => acc + (t.storyPoints || 0), 0);
+                  const totalTasks = sprintTasks.length;
+                  
+                  updated.status = 'active';
+                  updated.burndownHistory = [
+                    {
+                      date: new Date().toISOString().split('T')[0],
+                      remainingSP: totalSP,
+                      remainingTasks: totalTasks
+                    }
+                  ];
+                } else if (status === 'completed' && s.status !== 'completed') {
+                  updated.status = 'completed';
+                  updated.completedAt = new Date().toISOString();
+                } else {
+                  updated.status = status;
+                }
+              }
+              return updated;
+            }
+            if (status === 'active' && s.status === 'active' && s.id !== sprintId) {
+              return { ...s, status: 'completed', completedAt: new Date().toISOString() };
+            }
+            return s;
+          });
+
+          if (!sprintFound) {
+            throw new Error(`Sprint with ID ${sprintId} not found`);
+          }
+
+          project.markModified('sprints');
+
+          const logEntry = {
+            id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            userId: AI_AGENT_USER_ID,
+            userName: user.email || 'Agente IA',
+            action: `Updated sprint "${sprintId}"`,
+            timestamp: new Date().toISOString()
+          };
+          project.activityLog = [logEntry, ...(project.activityLog || [])].slice(0, 100);
+          project.markModified('activityLog');
+
+          await this.projectsService.update(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL, project);
+          return { content: [{ type: "text", text: `Sprint ${sprintId} successfully updated.` }] };
+        } catch (error: any) {
+          return { isError: true, content: [{ type: "text", text: `Error updating sprint: ${error?.message}` }] };
+        }
+      }
+
+      if (request.params.name === "complete_sprint") {
+        const { projectId, sprintId, fallbackSprintId, retro } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          
+          const doneColId = project.doneColumnId || project.columnOrder?.[project.columnOrder.length - 1] || 'column-done';
+          const sprintTasks = Object.values(project.tasks || {}).filter((t: any) => t.sprintId === sprintId);
+          
+          const completedTasksList = sprintTasks.filter((t: any) => t.columnId === doneColId);
+          const uncompletedTasksList = sprintTasks.filter((t: any) => t.columnId !== doneColId);
+          
+          const plannedSP = sprintTasks.reduce((acc: number, t: any) => acc + (t.storyPoints || 0), 0);
+          const completedSP = completedTasksList.reduce((acc: number, t: any) => acc + (t.storyPoints || 0), 0);
+          const plannedTasksCount = sprintTasks.length;
+          const completedTasksCount = completedTasksList.length;
+
+          let sprintFound = false;
+          project.sprints = (project.sprints || []).map((s: any) => {
+            if (s.id === sprintId) {
+              sprintFound = true;
+              return {
+                ...s,
+                status: 'completed',
+                completedAt: new Date().toISOString(),
+                stats: {
+                  plannedSP,
+                  completedSP,
+                  plannedTasks: plannedTasksCount,
+                  completedTasks: completedTasksCount
+                },
+                retro: retro || null
+              };
+            }
+            return s;
+          });
+
+          if (!sprintFound) {
+            throw new Error(`Sprint with ID ${sprintId} not found`);
+          }
+
+          const targetFallback = (fallbackSprintId === 'backlog' || !fallbackSprintId) ? null : fallbackSprintId;
+          uncompletedTasksList.forEach((t: any) => {
+            if (project.tasks[t.id]) {
+              project.tasks[t.id].sprintId = targetFallback;
+            }
+          });
+
+          project.markModified('sprints');
+          project.markModified('tasks');
+
+          const logEntry = {
+            id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            userId: AI_AGENT_USER_ID,
+            userName: user.email || 'Agente IA',
+            action: `Completed sprint "${sprintId}"`,
+            timestamp: new Date().toISOString()
+          };
+          project.activityLog = [logEntry, ...(project.activityLog || [])].slice(0, 100);
+          project.markModified('activityLog');
+
+          await this.projectsService.update(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL, project);
+          return { content: [{ type: "text", text: `Sprint ${sprintId} successfully completed and uncompleted tasks rolled to ${fallbackSprintId || 'backlog'}.` }] };
+        } catch (error: any) {
+          return { isError: true, content: [{ type: "text", text: `Error completing sprint: ${error?.message}` }] };
+        }
+      }
+
+      if (request.params.name === "update_project_dod") {
+        const { projectId, definitionOfDone } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          project.definitionOfDone = definitionOfDone || [];
+          
+          project.markModified('definitionOfDone');
+
+          const logEntry = {
+            id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            userId: AI_AGENT_USER_ID,
+            userName: user.email || 'Agente IA',
+            action: `Updated Definition of Done checklist`,
+            timestamp: new Date().toISOString()
+          };
+          project.activityLog = [logEntry, ...(project.activityLog || [])].slice(0, 100);
+          project.markModified('activityLog');
+
+          await this.projectsService.update(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL, project);
+          return { content: [{ type: "text", text: `Project Definition of Done successfully updated.` }] };
+        } catch (error: any) {
+          return { isError: true, content: [{ type: "text", text: `Error updating project DoD: ${error?.message}` }] };
+        }
+      }
+
+      if (request.params.name === "delete_task") {
+        const { projectId, taskId, columnId } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          
+          if (!project.tasks || !project.tasks[taskId]) {
+            throw new Error(`Task with ID ${taskId} not found in project`);
+          }
+
+          // Remove task from columns
+          const targetColId = columnId || Object.keys(project.columns || {}).find(colId => 
+            project.columns[colId].taskIds.includes(taskId)
+          );
+
+          if (targetColId && project.columns[targetColId]) {
+            project.columns[targetColId].taskIds = project.columns[targetColId].taskIds.filter(
+              (id: string) => id !== taskId
+            );
+          }
+
+          // Delete task from tasks list
+          delete project.tasks[taskId];
+
+          project.markModified('tasks');
+          project.markModified('columns');
+
+          const logEntry = {
+            id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            userId: AI_AGENT_USER_ID,
+            userName: user.email || 'Agente IA',
+            action: `Deleted task "${taskId}"`,
+            timestamp: new Date().toISOString()
+          };
+          project.activityLog = [logEntry, ...(project.activityLog || [])].slice(0, 100);
+          project.markModified('activityLog');
+
+          await this.projectsService.update(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL, project);
+          return { content: [{ type: "text", text: `Task ${taskId} successfully deleted.` }] };
+        } catch (error: any) {
+          return { isError: true, content: [{ type: "text", text: `Error deleting task: ${error?.message}` }] };
+        }
+      }
+
+      if (request.params.name === "delete_sprint") {
+        const { projectId, sprintId } = request.params.arguments as any;
+        try {
+          const project = await this.projectsService.findOne(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL);
+          
+          const sprints = project.sprints || [];
+          const updatedSprints = sprints.filter((s: any) => s.id !== sprintId);
+          if (sprints.length === updatedSprints.length) {
+            throw new Error(`Sprint with ID ${sprintId} not found`);
+          }
+
+          // Unassign sprint from tasks
+          const tasks = project.tasks || {};
+          Object.values(tasks).forEach((t: any) => {
+            if (t.sprintId === sprintId) {
+              t.sprintId = null;
+            }
+          });
+
+          project.sprints = updatedSprints;
+          project.markModified('sprints');
+          project.markModified('tasks');
+
+          const logEntry = {
+            id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            userId: AI_AGENT_USER_ID,
+            userName: user.email || 'Agente IA',
+            action: `Deleted sprint "${sprintId}"`,
+            timestamp: new Date().toISOString()
+          };
+          project.activityLog = [logEntry, ...(project.activityLog || [])].slice(0, 100);
+          project.markModified('activityLog');
+
+          await this.projectsService.update(projectId, AI_AGENT_USER_ID, AI_AGENT_EMAIL, project);
+          return { content: [{ type: "text", text: `Sprint ${sprintId} successfully deleted.` }] };
+        } catch (error: any) {
+          return { isError: true, content: [{ type: "text", text: `Error deleting sprint: ${error?.message}` }] };
         }
       }
 

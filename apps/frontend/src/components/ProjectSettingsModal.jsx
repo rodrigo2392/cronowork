@@ -28,6 +28,8 @@ export default function ProjectSettingsModal() {
   const [aiEnabled, setAiEnabled] = useState(true);
   const [wipLimits, setWipLimits] = useState({});
   const [notifySettings, setNotifySettings] = useState({ muted: false, assign: true, mention: true });
+  const [dodList, setDodList] = useState([]);
+  const [newDodItem, setNewDodItem] = useState('');
 
   useEffect(() => {
     if (activeProject) {
@@ -51,6 +53,8 @@ export default function ProjectSettingsModal() {
         assign: ns.assign !== false,
         mention: ns.mention !== false,
       });
+      setDodList(activeProject.definitionOfDone || []);
+      setNewDodItem('');
     }
   }, [activeProject, isProjectSettingsModalOpen]);
 
@@ -91,6 +95,7 @@ export default function ProjectSettingsModal() {
       autoStartTimer,
       aiEnabled,
       notifySettings,
+      definitionOfDone: dodList,
     };
     updateProjectState(updatedProject);
     setIsProjectSettingsModalOpen(false);
@@ -350,6 +355,57 @@ export default function ProjectSettingsModal() {
               {toggleRow('muted', 'Silenciar proyecto', 'No envía ninguna notificación (excepto invitaciones).')}
               {toggleRow('assign', 'Asignación de tareas', 'Avisar cuando se asigna una tarea a alguien.', notifySettings.muted)}
               {toggleRow('mention', 'Menciones', 'Avisar cuando se menciona a alguien en un comentario.', notifySettings.muted)}
+            </div>
+          </div>
+
+          {/* Definition of Done Config */}
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 500 }}>
+              Definición de Terminado (DoD)
+            </label>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px', lineHeight: '1.4' }}>
+              Checklist global que las tareas del proyecto deben cumplir para poder considerarse completadas.
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
+              {dodList.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '6px 10px', backgroundColor: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{item}</span>
+                  <button
+                    type="button"
+                    onClick={() => setDodList(prev => prev.filter((_, i) => i !== idx))}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--priority-high)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+                  >
+                    <Icons.Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                value={newDodItem}
+                onChange={(e) => setNewDodItem(e.target.value)}
+                placeholder="ej. Pruebas unitarias hechas"
+                style={{ ...selectStyle, cursor: 'text', flex: 1 }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (newDodItem.trim() && !dodList.includes(newDodItem.trim())) {
+                    setDodList(prev => [...prev, newDodItem.trim()]);
+                    setNewDodItem('');
+                  }
+                }}
+                style={{
+                  padding: '8px 14px', borderRadius: 'var(--radius-md)', border: 'none',
+                  backgroundColor: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-color)',
+                  fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >
+                <Icons.Plus size={16} />
+              </button>
             </div>
           </div>
 

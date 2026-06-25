@@ -148,15 +148,21 @@ export const BoardProvider = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterTag, setFilterTag] = useState('all');
+  const [currentView, setCurrentView] = useState('board'); // 'board' | 'backlog'
+  const [selectedSprintId, setSelectedSprintId] = useState('all'); // 'all' | 'backlog' | id
 
   // Modals and UI State
   const [activeTask, setActiveTask] = useState(null); // Task detail modal
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null); // Task to edit (can be empty for create)
   const [activeColumnId, setActiveColumnId] = useState(null); // Track which column to add task to
+  const [presetTaskData, setPresetTaskData] = useState(null);
   
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
+
+  const [isSprintModalOpen, setIsSprintModalOpen] = useState(false);
+  const [editingSprint, setEditingSprint] = useState(null);
   
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
@@ -662,7 +668,10 @@ export const BoardProvider = ({ children }) => {
       subtasks: taskData.subtasks || [],
       comments: taskData.comments || [],
       dueDate: taskData.dueDate || '',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      assignee: taskData.assignee || '',
+      storyPoints: taskData.storyPoints !== undefined ? taskData.storyPoints : null,
+      sprintId: taskData.sprintId || null
     };
 
     const updatedProject = {
@@ -1101,6 +1110,261 @@ export const BoardProvider = ({ children }) => {
     localStorage.removeItem('vibe_kanban_active_id');
   };
 
+  // --- Scrum / Sprints Actions ---
+  const createSprint = ({ name, startDate, endDate, goal }) => {
+    if (!activeProject) return;
+    const newSprint = {
+      id: `sprint-${Date.now()}`,
+      name: name || `Sprint ${(activeProject.sprints?.length || 0) + 1}`,
+      startDate: startDate || '',
+      endDate: endDate || '',
+      goal: goal || '',
+      status: 'planned',
+      completedAt: null,
+      burndownHistory: [],
+      stats: null,
+      retro: null
+    };
+
+    const updatedProject = {
+      ...activeProject,
+      sprints: [...(activeProject.sprints || []), newSprint]
+    };
+    updateProjectState(updatedProject);
+    logActivity(activeProject.id, `Created sprint "${newSprint.name}"`);
+  };
+
+  const updateSprint = (sprintId, updatedData) => {
+    if (!activeProject) return;
+    const updatedSprints = (activeProject.sprints || []).map(s => 
+      s.id === sprintId ? { ...s, ...updatedData } : s
+    );
+
+    const updatedProject = {
+      ...activeProject,
+      sprints: updatedSprints
+    };
+    updateProjectState(updatedProject);
+    logActivity(activeProject.id, `Updated sprint settings`);
+  };
+
+  const startSprint = (sprintId) => {
+    if (!activeProject) return;
+    
+    const updatedSprints = (activeProject.sprints || []).map(s => {
+      if (s.id === sprintId) {
+        const sprintTasks = Object.values(activeProject.tasks || {}).filter(t => t.sprintId === sprintId);
+        const totalSP = sprintTasks.reduce((acc, t) => acc + (t.storyPoints || 0), 0);
+        const totalTasks = sprintTasks.length;
+        
+        return {
+          ...s,
+          status: 'active',
+          burndownHistory: [
+            {
+              date: new Date().toISOString().split('T')[0],
+              remainingSP: totalSP,
+              remainingTasks: totalTasks
+            }
+          ]
+        };
+      }
+      if (s.status === 'active') {
+        return { ...s, status: 'completed', completedAt: new Date().toISOString() };
+      }
+      return s;
+    });
+
+    const updatedProject = {
+      ...activeProject,
+      sprints: updatedSprints
+    };
+    updateProjectState(updatedProject);
+    logActivity(activeProject.id, `Started sprint`);
+  };
+
+  const completeSprint = (sprintId, fallbackSprintId, retroData) => {
+    if (!activeProject) return;
+
+    const doneColId = resolveDoneColumnId(activeProject);
+    const sprintTasks = Object.values(activeProject.tasks || {}).filter(t => t.sprintId === sprintId);
+    
+    const completedTasksList = sprintTasks.filter(t => t.columnId === doneColId);
+    const uncompletedTasksList = sprintTasks.filter(t => t.columnId !== doneColId);
+    
+    const plannedSP = sprintTasks.reduce((acc, t) => acc + (t.storyPoints || 0), 0);
+    const completedSP = completedTasksList.reduce((acc, t) => acc + (t.storyPoints || 0), 0);
+    const plannedTasksCount = sprintTasks.length;
+    const completedTasksCount = completedTasksList.length;
+
+    const updatedSprints = (activeProject.sprints || []).map(s => {
+      if (s.id === sprintId) {
+        return {
+          ...s,
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+          stats: {
+            plannedSP,
+            completedSP,
+            plannedTasks: plannedTasksCount,
+            completedTasks: completedTasksCount
+          },
+          retro: retroData || null
+        };
+      }
+      return s;
+    });
+
+    const updatedTasks = { ...activeProject.tasks };
+    uncompletedTasksList.forEach(t => {
+      updatedTasks[t.id] = {
+        ...t,
+        sprintId: fallbackSprintId === 'backlog' ? null : fallbackSprintId
+      };
+    });
+
+    const updatedProject = {
+      ...activeProject,
+      sprints: updatedSprints,
+      tasks: updatedTasks
+    };
+
+    updateProjectState(updatedProject);
+    logActivity(activeProject.id, `Completed sprint`);
+  };
+
+  const deleteSprint = (sprintId) => {
+    if (!activeProject) return;
+    
+    const updatedTasks = { ...activeProject.tasks };
+    Object.values(updatedTasks).forEach(t => {
+      if (t.sprintId === sprintId) {
+        updatedTasks[t.id] = { ...t, sprintId: null };
+      }
+    });
+
+    const updatedSprints = (activeProject.sprints || []).filter(s => s.id !== sprintId);
+
+    const updatedProject = {
+      ...activeProject,
+      sprints: updatedSprints,
+      tasks: updatedTasks
+    };
+
+    updateProjectState(updatedProject);
+    logActivity(activeProject.id, `Deleted sprint`);
+  };
+
+  const assignTaskToSprint = (taskId, sprintId) => {
+    if (!activeProject || !activeProject.tasks[taskId]) return;
+    const updatedTask = {
+      ...activeProject.tasks[taskId],
+      sprintId: sprintId || null
+    };
+
+    const updatedProject = {
+      ...activeProject,
+      tasks: {
+        ...activeProject.tasks,
+        [taskId]: updatedTask
+      }
+    };
+    updateProjectState(updatedProject);
+    if (activeTask && activeTask.id === taskId) {
+      setActiveTask(updatedTask);
+    }
+  };
+
+  const updateTaskStoryPoints = (taskId, storyPoints) => {
+    if (!activeProject || !activeProject.tasks[taskId]) return;
+    const parsedSP = storyPoints === null || storyPoints === undefined ? null : Number(storyPoints);
+    const updatedTask = {
+      ...activeProject.tasks[taskId],
+      storyPoints: parsedSP
+    };
+
+    const updatedProject = {
+      ...activeProject,
+      tasks: {
+        ...activeProject.tasks,
+        [taskId]: updatedTask
+      }
+    };
+    updateProjectState(updatedProject);
+    if (activeTask && activeTask.id === taskId) {
+      setActiveTask(updatedTask);
+    }
+  };
+
+  const toggleTaskDodItem = (taskId, dodItem) => {
+    if (!activeProject || !activeProject.tasks[taskId]) return;
+    const task = activeProject.tasks[taskId];
+    const completedItems = task.dodCompletedItems || [];
+    
+    const updatedItems = completedItems.includes(dodItem)
+      ? completedItems.filter(item => item !== dodItem)
+      : [...completedItems, dodItem];
+      
+    const updatedTask = {
+      ...task,
+      dodCompletedItems: updatedItems
+    };
+
+    const updatedProject = {
+      ...activeProject,
+      tasks: {
+        ...activeProject.tasks,
+        [taskId]: updatedTask
+      }
+    };
+    updateProjectState(updatedProject);
+    if (activeTask && activeTask.id === taskId) {
+      setActiveTask(updatedTask);
+    }
+  };
+
+  const updateDefinitionOfDone = (dodList) => {
+    if (!activeProject) return;
+    const updatedProject = {
+      ...activeProject,
+      definitionOfDone: dodList || []
+    };
+    updateProjectState(updatedProject);
+  };
+
+  const recordDailyBurndownSnapshot = (sprintId) => {
+    if (!activeProject) return;
+    const doneColId = resolveDoneColumnId(activeProject);
+    const sprintTasks = Object.values(activeProject.tasks || {}).filter(t => t.sprintId === sprintId);
+    
+    const remainingTasks = sprintTasks.filter(t => t.columnId !== doneColId);
+    const remainingSP = remainingTasks.reduce((acc, t) => acc + (t.storyPoints || 0), 0);
+    const remainingTasksCount = remainingTasks.length;
+    
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    const updatedSprints = (activeProject.sprints || []).map(s => {
+      if (s.id === sprintId) {
+        const history = s.burndownHistory || [];
+        const filteredHistory = history.filter(h => h.date !== todayStr);
+        return {
+          ...s,
+          burndownHistory: [
+            ...filteredHistory,
+            { date: todayStr, remainingSP, remainingTasks: remainingTasksCount }
+          ]
+        };
+      }
+      return s;
+    });
+
+    const updatedProject = {
+      ...activeProject,
+      sprints: updatedSprints
+    };
+    updateProjectState(updatedProject);
+  };
+
   // Gather all unique tags from active project tasks for filtering lists
   const allTags = activeProject 
     ? Array.from(
@@ -1134,11 +1398,18 @@ export const BoardProvider = ({ children }) => {
         setEditingTask,
         activeColumnId,
         setActiveColumnId,
+        presetTaskData,
+        setPresetTaskData,
         
         isProjectModalOpen,
         setIsProjectModalOpen,
         editingProject,
         setEditingProject,
+
+        isSprintModalOpen,
+        setIsSprintModalOpen,
+        editingSprint,
+        setEditingSprint,
         
         isShareModalOpen,
         setIsShareModalOpen,
@@ -1193,6 +1464,21 @@ export const BoardProvider = ({ children }) => {
         
         archiveTask,
         unarchiveTask,
+
+        currentView,
+        setCurrentView,
+        selectedSprintId,
+        setSelectedSprintId,
+        createSprint,
+        updateSprint,
+        startSprint,
+        completeSprint,
+        deleteSprint,
+        assignTaskToSprint,
+        updateTaskStoryPoints,
+        toggleTaskDodItem,
+        updateDefinitionOfDone,
+        recordDailyBurndownSnapshot,
 
         activeDoneColumnId: resolveDoneColumnId(activeProject),
         myRole,

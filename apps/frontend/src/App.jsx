@@ -10,6 +10,7 @@ import AuthPage from "./components/AuthPage";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import Board from "./components/Board";
+import BacklogSprintsView from "./components/BacklogSprintsView";
 import TaskModal from "./components/TaskModal";
 import ProjectModal from "./components/ProjectModal";
 import ShareModal from "./components/ShareModal";
@@ -23,7 +24,7 @@ import McpTokenModal from "./components/McpTokenModal";
 import * as Icons from "lucide-react";
 
 function BoardWrapper() {
-  const { projects, isProjectsLoading, fetchError, isProfileModalOpen, setIsProfileModalOpen } = useBoard();
+  const { projects, isProjectsLoading, fetchError, isProfileModalOpen, setIsProfileModalOpen, currentView } = useBoard();
   const { logout } = useAuth();
 
   if (isProjectsLoading) {
@@ -162,7 +163,7 @@ function BoardWrapper() {
         }}
       >
         <Header />
-        <Board />
+        {currentView === 'board' ? <Board /> : <BacklogSprintsView />}
       </main>
 
       {/* Global Action Modals */}

@@ -181,6 +181,24 @@ export default function TaskCard({ task, index, columnId }) {
                       {tag}
                     </span>
                   ))}
+                {task.storyPoints !== undefined && task.storyPoints !== null && (
+                  <span
+                    style={{
+                      fontSize: "0.68rem",
+                      fontWeight: 600,
+                      backgroundColor: "rgba(99, 102, 241, 0.1)",
+                      color: "var(--accent-color)",
+                      padding: "2px 8px",
+                      borderRadius: "99px",
+                      border: "1px solid rgba(99, 102, 241, 0.2)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "2px",
+                    }}
+                  >
+                    {task.storyPoints} SP
+                  </span>
+                )}
               </div>
 
               {/* Quick delete (hidden until hover) */}

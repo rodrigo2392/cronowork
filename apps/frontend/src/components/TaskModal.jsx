@@ -29,6 +29,12 @@ export default function TaskModal() {
     activeProjectId,
     allUsers,
     setViewingUserProfile,
+    activeProject,
+    toggleTaskDodItem,
+    updateTaskStoryPoints,
+    assignTaskToSprint,
+    presetTaskData,
+    setPresetTaskData,
   } = useBoard();
   const { confirm } = useConfirm();
 
@@ -39,6 +45,8 @@ export default function TaskModal() {
   const [tags, setTags] = useState([]);
   const [dueDate, setDueDate] = useState("");
   const [subtasks, setSubtasks] = useState([]);
+  const [storyPoints, setStoryPoints] = useState(null);
+  const [sprintId, setSprintId] = useState(null);
 
   const [tagInput, setTagInput] = useState("");
   const [subtaskInput, setSubtaskInput] = useState("");
@@ -338,6 +346,7 @@ export default function TaskModal() {
 
   // Update states when modal opens/editingTask changes
   useEffect(() => {
+    const activeProj = projects.find(p => p.id === activeProjectId);
     if (editingTask) {
       setTitle(editingTask.title || "");
       setDescription(editingTask.description || "");
@@ -347,6 +356,8 @@ export default function TaskModal() {
       setSubtasks(editingTask.subtasks || []);
       setComments(editingTask.comments || []);
       setAssignee(editingTask.assignee || "");
+      setStoryPoints(editingTask.storyPoints !== undefined ? editingTask.storyPoints : null);
+      setSprintId(editingTask.sprintId || null);
     } else if (isTaskModalOpen) {
       setTitle("");
       setDescription("");
@@ -356,8 +367,10 @@ export default function TaskModal() {
       setSubtasks([]);
       setComments([]);
       setAssignee(activeProj?.defaultAssignee || "");
+      setStoryPoints(presetTaskData?.storyPoints !== undefined ? presetTaskData.storyPoints : null);
+      setSprintId(presetTaskData?.sprintId || null);
     }
-  }, [editingTask, isTaskModalOpen]);
+  }, [editingTask, isTaskModalOpen, activeProjectId, projects, presetTaskData]);
 
   useEffect(() => {
     const handleMentionClick = (e) => {
@@ -384,6 +397,7 @@ export default function TaskModal() {
       setSubtasks([]);
       setComments([]);
       setAssignee("");
+      if (setPresetTaskData) setPresetTaskData(null);
     }
     setTagInput("");
     setSubtaskInput("");
@@ -465,6 +479,8 @@ export default function TaskModal() {
       subtasks,
       comments,
       assignee,
+      storyPoints: storyPoints !== null ? Number(storyPoints) : null,
+      sprintId: sprintId || null,
     };
 
     if (editingTask) {
@@ -1570,6 +1586,89 @@ export default function TaskModal() {
               </div>
             </div>
 
+            {/* Sprint & Story Points Row */}
+            <div
+              className="modal-row-2col"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "16px",
+                marginTop: "16px",
+              }}
+            >
+              {/* Sprint */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 500 }}>
+                  {t("sprints.title") || "Sprint"}
+                </label>
+                <select
+                  value={sprintId || ""}
+                  onChange={(e) => {
+                    const val = e.target.value || null;
+                    setSprintId(val);
+                    if (editingTask) {
+                      assignTaskToSprint(editingTask.id, val);
+                    }
+                  }}
+                  style={{
+                    padding: "9px 12px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--bg-tertiary)",
+                    color: sprintId ? "var(--text-primary)" : "var(--text-muted)",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "0.85rem",
+                    outline: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">Ninguno (Backlog)</option>
+                  {activeProject?.sprints?.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.status === 'active' ? `🏃 [Activo] ${s.name}` : s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Story Points */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 500 }}>
+                  {t("sprints.storyPoints") || "Story Points"}
+                </label>
+                <select
+                  value={storyPoints === null || storyPoints === undefined ? "" : storyPoints}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? null : Number(e.target.value);
+                    setStoryPoints(val);
+                    if (editingTask) {
+                      updateTaskStoryPoints(editingTask.id, val);
+                    }
+                  }}
+                  style={{
+                    padding: "9px 12px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--bg-tertiary)",
+                    color: storyPoints !== null ? "var(--text-primary)" : "var(--text-muted)",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "0.85rem",
+                    outline: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">Sin estimar</option>
+                  <option value="1">1 SP</option>
+                  <option value="2">2 SP</option>
+                  <option value="3">3 SP</option>
+                  <option value="5">5 SP</option>
+                  <option value="8">8 SP</option>
+                  <option value="13">13 SP</option>
+                  <option value="21">21 SP</option>
+                </select>
+              </div>
+            </div>
+
 
             {/* Dedicated Time Tracker Section */}
             {liveTask && (
@@ -1921,6 +2020,87 @@ export default function TaskModal() {
                 </div>
               )}
             </div>
+
+            {/* Definition of Done (DoD) Checklist */}
+            {editingTask && activeProject?.definitionOfDone && activeProject.definitionOfDone.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  borderTop: "1px solid rgba(255, 255, 255, 0.03)",
+                  paddingTop: "16px",
+                  marginTop: "16px",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <label
+                    style={{
+                      fontSize: "0.8rem",
+                      color: "var(--text-secondary)",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {t("sprints.dod") || "Definición de Terminado (DoD)"}
+                  </label>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    {(editingTask.dodCompletedItems || []).length} / {activeProject.definitionOfDone.length} completados
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    marginTop: "4px",
+                  }}
+                >
+                  {activeProject.definitionOfDone.map((item) => {
+                    const isCompleted = (editingTask.dodCompletedItems || []).includes(item);
+                    return (
+                      <div
+                        key={item}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          padding: "6px 8px",
+                          borderRadius: "var(--radius-sm)",
+                          backgroundColor: "rgba(255,255,255,0.01)",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleTaskDodItem(editingTask.id, item)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: isCompleted ? "#10b981" : "var(--text-muted)",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            textAlign: "left",
+                            flex: 1,
+                          }}
+                        >
+                          {isCompleted ? <Icons.CheckSquare size={15} /> : <Icons.Square size={15} />}
+                          <span
+                            style={{
+                              fontSize: "0.82rem",
+                              color: isCompleted ? "var(--text-secondary)" : "var(--text-primary)",
+                              textDecoration: isCompleted ? "line-through" : "none",
+                            }}
+                          >
+                            {item}
+                          </span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Comments Section */}
             {editingTask && (

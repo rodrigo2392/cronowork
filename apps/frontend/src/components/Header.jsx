@@ -38,7 +38,11 @@ export default function Header() {
     isSidebarCollapsed,
     setIsSidebarCollapsed,
     activeDoneColumnId,
-    isReadOnly
+    isReadOnly,
+    currentView,
+    setCurrentView,
+    selectedSprintId,
+    setSelectedSprintId,
   } = useBoard();
 
   const [newColTitle, setNewColTitle] = useState("");
@@ -922,6 +926,54 @@ export default function Header() {
           </span>
         </div>
 
+        {/* View Switcher: Board vs Backlog */}
+        <div style={{ display: "flex", gap: "2px", backgroundColor: "var(--bg-secondary)", padding: "3px", borderRadius: "8px", border: "1px solid var(--border-color)", alignSelf: "center" }}>
+          <button
+            onClick={() => setCurrentView('board')}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "6px",
+              border: "none",
+              backgroundColor: currentView === 'board' ? "var(--accent-color)" : "transparent",
+              color: currentView === 'board' ? "#fff" : "var(--text-secondary)",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all var(--transition-fast)",
+            }}
+            onMouseEnter={(e) => {
+              if (currentView !== 'board') e.currentTarget.style.color = "var(--text-primary)";
+            }}
+            onMouseLeave={(e) => {
+              if (currentView !== 'board') e.currentTarget.style.color = "var(--text-secondary)";
+            }}
+          >
+            Tablero
+          </button>
+          <button
+            onClick={() => setCurrentView('backlog')}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "6px",
+              border: "none",
+              backgroundColor: currentView === 'backlog' ? "var(--accent-color)" : "transparent",
+              color: currentView === 'backlog' ? "#fff" : "var(--text-secondary)",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all var(--transition-fast)",
+            }}
+            onMouseEnter={(e) => {
+              if (currentView !== 'backlog') e.currentTarget.style.color = "var(--text-primary)";
+            }}
+            onMouseLeave={(e) => {
+              if (currentView !== 'backlog') e.currentTarget.style.color = "var(--text-secondary)";
+            }}
+          >
+            Backlog & Sprints
+          </button>
+        </div>
+
         {/* Mobile Toggle Filters Button */}
         {isMobile && (
           <button
@@ -1012,6 +1064,33 @@ export default function Header() {
                 width: isMobile ? "100%" : "auto",
               }}
             >
+              {/* Sprint Filter */}
+              {currentView === 'board' && activeProject.sprints && activeProject.sprints.length > 0 && (
+                <select
+                  value={selectedSprintId}
+                  onChange={(e) => setSelectedSprintId(e.target.value)}
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--bg-secondary)",
+                    color: "var(--text-primary)",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "0.85rem",
+                    outline: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="all">Todos los Sprints</option>
+                  <option value="backlog">Sin Sprint (Backlog)</option>
+                  {activeProject.sprints.map((sprint) => (
+                    <option key={sprint.id} value={sprint.id}>
+                      {sprint.status === 'active' ? `🏃 [Activo] ${sprint.name}` : sprint.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+
               {/* Priority Filter */}
               <select
                 value={filterPriority}

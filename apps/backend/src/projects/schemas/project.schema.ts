@@ -51,6 +51,12 @@ export class Project extends Document {
   @Prop({ type: [String], default: [] })
   columnOrder: string[];
 
+  @Prop({ type: [MongooseSchema.Types.Mixed], default: [] })
+  sprints: any[];
+
+  @Prop({ type: [String], default: [] })
+  definitionOfDone: string[];
+
   // Column that represents "completed" (drives progress %, time-tracker stop,
   // and auto-archive). Falls back to the last column when unset.
   @Prop()

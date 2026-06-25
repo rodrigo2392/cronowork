@@ -18,6 +18,7 @@ export default function Column({ column, index }) {
     setIsTaskModalOpen,
     setEditingTask,
     setActiveColumnId,
+    selectedSprintId,
   } = useBoard();
   const { confirm } = useConfirm();
 
@@ -43,7 +44,12 @@ export default function Column({ column, index }) {
 
     const matchesTag = filterTag === 'all' || (task.tags && task.tags.includes(filterTag));
 
-    return matchesSearch && matchesPriority && matchesTag;
+    const matchesSprint =
+      selectedSprintId === 'all' ||
+      (selectedSprintId === 'backlog' && !task.sprintId) ||
+      (task.sprintId === selectedSprintId);
+
+    return matchesSearch && matchesPriority && matchesTag && matchesSprint;
   });
 
   const handleTitleSubmit = (e) => {

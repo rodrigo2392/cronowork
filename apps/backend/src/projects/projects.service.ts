@@ -55,6 +55,7 @@ export class ProjectsService {
     'doneColumnId', 'autoArchiveEnabled', 'autoArchiveDays', 'autoDeleteArchivedDays',
     'defaultPriority', 'defaultTags', 'defaultAssignee', 'autoStartTimer',
     'aiEnabled', 'notifySettings', 'activityLog',
+    'sprints', 'definitionOfDone',
   ];
 
   async update(id: string, userId: string, email: string, projectData: any): Promise<Project> {
